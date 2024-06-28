@@ -1,22 +1,6 @@
 import sys
 import pandas as pd
 
-GUESTS = [
-    "Arul",
-    "Asa",
-    "Rachel",
-    "Triana",
-    "Oliver",
-#    "Catherine",
-    "Shahanae",
-    "Stella",
-#    "Eros",
-#    "Joseph",
-    "Naomi",
-    "Claire",
-    "Mika"
-]
-
 DAYS_ABBR = [
     "sun",
     "mon",

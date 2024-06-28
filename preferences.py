@@ -1,4 +1,3 @@
-from utils import GUESTS
 from utils import TOTAL_CHORES_NAMES, TOTAL_CHORES_SET
 import os
 import csv
@@ -6,6 +5,13 @@ import pandas as pd
 
 HEADER=["task", "pref(0,1,2)"]
 PREF_DIR = "preferences"
+
+guests_df = pd.read_csv(f"{PREF_DIR}/guests.csv", dtype={"guest": str, "hours": float})
+# Filter eligible guests
+guests_df = guests_df[guests_df['hours'] > 0]
+GUESTS = guests_df['guest'].to_list()
+HOURS = guests_df['hours'].to_list()
+GUESTS_AND_HOURS = zip(GUESTS, HOURS)
 
 def create_prefs(file_name):
     rows = []

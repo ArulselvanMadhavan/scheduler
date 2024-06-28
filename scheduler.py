@@ -8,12 +8,10 @@ from utils import TOTAL_CHORES_NAMES
 from utils import TOTAL_CHORES_HOURS
 from utils import TOTAL_CHORES_PRIORITY
 from utils import export_schedule, get_hours
-from utils import GUESTS
 import csv
 from preferences import PREF_DIR
-
-MAX_HOURS_PER_GUEST = 4
-
+from preferences import GUESTS
+from preferences import GUESTS_AND_HOURS
 # Happiness is a function
 # maximize chore hours
 # prefer weekly chore assignment first
@@ -56,20 +54,30 @@ chore_assignment = pulp.LpProblem("Chore assignment combo", pulp.LpMaximize)
 chore_assignment += pulp.lpSum(happiness(c) * x[c] for c in possible_combos)
 
 # Every guest gets a per week max hours limit
-for guest in GUESTS:
+for guest, max_hours in GUESTS_AND_HOURS:
     chore_assignment += (
         pulp.lpSum([get_hours(ch)[1] * x[(g, ch)]
                     for (g, ch) in possible_combos
-                    if g == guest]) <= MAX_HOURS_PER_GUEST
+                    if g == guest]) <= max_hours
     )
 
-# every chore must have one guest
+# every chore with the highest priority must have a guest assigned to it
 for chore in TOTAL_CHORES_NAMES:
+    ch_idx = TOTAL_CHORES_NAMES_DICT[chore]
+    ch_prio = TOTAL_CHORES_PRIORITY[ch_idx]
+    # if ch_prio > 1:
+    #     # High priority chores should have a guest assigned to their name
+    #     chore_assignment += (
+    #         pulp.lpSum([x[(g, ch)]
+    #                     for (g, ch) in possible_combos if ch == chore]) == 1.0
+    #     )
+    # else:
     chore_assignment += (
         pulp.lpSum([x[(g, ch)]
-                    for (g, ch) in possible_combos if ch == chore]) == 1.0
+                    for (g, ch) in possible_combos if ch == chore]) <= 1.0
     )
 
+# per day - max hours for guests should be less than 2
 chore_assignment.solve()
 
 print(f"The chosen tables are out of a total of {len(possible_combos)}:")
