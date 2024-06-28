@@ -162,7 +162,10 @@ def multiple_dfs(df_list, offsets, sheets, file_name, spaces):
 def export_schedule(x, possible_combos, chore_assignment):
     # Solution found
     if chore_assignment.status == 1:
-        data = {DAYS_ABBR[d]:None for d in range(len(DAYS_ABBR))}
+        # Keep Sunday last
+        data = {DAYS_ABBR[d]:None for d in range(1, len(DAYS_ABBR))}
+        data[DAYS_ABBR[0]] = None
+        # data = {DAYS_ABBR[d]:None for d in range(len(DAYS_ABBR))}
         max_col_len = 0
         misc_data = []
         for c in possible_combos:
@@ -209,6 +212,7 @@ def export_schedule(x, possible_combos, chore_assignment):
             h = m[2]
             guest_hours_dict[g] = guest_hours_dict.get(g, 0) + h
         guest_hours_list = [[k, v] for k, v in guest_hours_dict.items()]
+        # Rotate tasks by 1 - so Sunday comes last
         df0 = pd.DataFrame(data=timely_tasks, columns=columns)
         df1 = pd.DataFrame(data=misc_data, columns=["tasks", "owner", "hours"])
         df2 = pd.DataFrame(data=guest_hours_list, columns=["guests", "hours"])
