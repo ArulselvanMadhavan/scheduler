@@ -2,3 +2,5 @@ __pycache__/
 *.csv
 *.pdf
 *.xlsx
+frontend/_opam/
+frontend/_build/
