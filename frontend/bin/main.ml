@@ -27,8 +27,9 @@ let html =
    </style>
    </head>
    <body>
-   <h1>Visualizations Playground</h1>
-   <div class="olirvu-container">
+   <h1>Select your Schedule</h1>
+   <div class="magizhchi
+   -container">
    <div id="app"></div>
    <div id="viz"></div>
    </div>
@@ -58,8 +59,7 @@ let server ~port =
       respond_string
         ~content_type:"application/javascript"
         ~status:`OK
-        ~body:""
-        (* ~body:Embedded_files.main_dot_bc_dot_js *)
+        ~body:Embedded_files.main_dot_bc_dot_js
         ()
     | uri when Base.String.Search_pattern.matches json_pattern uri ->
       respond_file ~content_type:"application/json" (Base.String.drop_prefix uri 1)
