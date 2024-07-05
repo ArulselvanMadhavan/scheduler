@@ -6,7 +6,7 @@
   bonsai.web
   bonsai.web_ui_form
   async_kernel
-  async_js  
+  async_js
   magizhchi)
  (preprocess
   (pps ppx_jane ppx_typed_fields ppx_sexp_message ppx_fields_conv)))

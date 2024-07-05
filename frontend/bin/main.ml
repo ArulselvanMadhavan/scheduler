@@ -12,17 +12,11 @@ let html =
    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
    <script type="text/javascript" src="main.js"></script>
    <style>
-   form.vega-bindings {
+   .magizhchi-container {
    display: flex;
-   position: absolute;
-   top: 0px;
-   flex-direction:column;
    }
-   div#viz {
-   border-style: "solid"
-   }
-   .olirvu-container {
-   display: flex;
+   .day-column {
+   border: solid;
    }
    </style>
    </head>
@@ -31,11 +25,11 @@ let html =
    <div class="magizhchi
    -container">
    <div id="app"></div>
-   <div id="viz"></div>
    </div>
    </body>
    </html>
    |}
+;;
 
 let respond_string ~content_type ~status ~body ?headers =
   let headers = Cohttp.Header.add_opt headers "Content-Type" content_type in
