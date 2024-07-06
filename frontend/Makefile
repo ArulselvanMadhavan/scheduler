@@ -4,8 +4,12 @@ fmt:
 build: fmt
 	@dune build
 
-run: fmt
+run:
 	@dune exec magizhchi
 
 clean:
 	@dune clean
+
+WATCH ?= @all
+watch:
+	@dune build $(WATCH) -w
