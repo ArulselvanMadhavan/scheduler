@@ -5,36 +5,6 @@ open! Core
 open! Bonsai_web.Cont.Bonsai.Let_syntax
 open Vdom
 
-module Variant = struct
-  type t =
-    | A
-    | B of int
-    | C of string
-  [@@deriving typed_variants, sexp_of]
-
-  let form : Bonsai.graph -> t Form.t Bonsai.t =
-    Form.Typed.Variant.make
-      (module struct
-        (* reimport the module that typed_fields just derived *)
-        module Typed_variant = Typed_variant
-
-        let label_for_variant = `Inferred
-        let initial_choice = `First_constructor
-
-        (* provide a form computation for constructor in the variant *)
-        let form_for_variant
-          : type a. a Typed_variant.t -> Bonsai.graph -> a Form.t Bonsai.t
-          =
-          fun typed_field graph ->
-          match typed_field with
-          | A -> Form.return () |> Bonsai.return
-          | B -> Form.Elements.Textbox.int ~allow_updates_when_focused:`Always () graph
-          | C -> Form.Elements.Textbox.string ~allow_updates_when_focused:`Always () graph
-        ;;
-      end)
-  ;;
-end
-
 let pref_node _k state set_state _graph : Node.t * int =
   let view =
     let is_disabled id = if Int.equal id state then Some Attr.disabled else None in
@@ -93,33 +63,68 @@ let pref_for_users_assoc (graph : Bonsai.graph) : Node.t Bonsai.t =
     ]
 ;;
 
-let view_for_form (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
-  let%map form =
-    Form.Elements.Dropdown.list
-      ~init:`First_item
-      (module String)
-      ~equal:[%equal: String.t]
-      (Bonsai.return (List.map guest_prefs ~f:(fun (g, _h) -> g)))
-      graph
-  and counter = pref_for_users_assoc graph in
-  let form = form in
-  let value = Form.value form in
-  Vdom.Node.div
-    [ Form.view_as_vdom form (* ; Form.view_as_vdom dd_form *)
-    ; counter
-    ; Vdom.Node.sexp_for_debugging ([%sexp_of: string Or_error.t] value)
-    ]
-;;
-
 let build_guests guest_prefs =
   let make_cols = function
-    | c0 :: c1 :: _ -> Some (c0, Int.of_string c1)
+    | c0 :: _ -> Some c0
     | _ -> None
   in
   List.map guest_prefs ~f:(String.split ~on:',') |> List.filter_map ~f:make_cols
 ;;
 
+let populate_guests (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
+  let guests, set_guests = Bonsai.state [] graph in
+  let%map form =
+    Form.Elements.Dropdown.list
+      ~init:`First_item
+      (module String)
+      ~equal:[%equal: String.t]
+      guests
+      graph
+  and guests = guests
+  and set_guests = set_guests in
+  let is_empty_guests = Int.equal (List.length guests) 0 in
+  let button_text =
+    if is_empty_guests then "Load Guest Preferences" else "Save Guest Preferences"
+  in
+  let load_guests path =
+    let open Async_kernel.Deferred.Let_syntax in
+    let%map response = Async_js.Http.get path in
+    match Core.Or_error.ok response with
+    | Some l -> String.split_lines l |> build_guests
+    | None ->
+      let _ =
+        Core.Or_error.iter_error response ~f:(fun e ->
+          Brr.Console.(log [ str (Error.to_string_hum e) ]))
+      in
+      []
+  in
+  let update_guests =
+    let open Bonsai_web.Effect.Let_syntax in
+    let%bind guests =
+      Bonsai_web.Effect.of_deferred_fun load_guests Magizhchi.Constants.guests_csv
+    in
+    set_guests guests
+  in
+  let on_click =
+    Attr.on_click (fun _ -> if is_empty_guests then update_guests else Effect.Ignore)
+  in
+  Vdom.Node.div
+    [ Node.button ~attrs:[ on_click ] [ Node.text button_text ]; Form.view_as_vdom form ]
+;;
+
+let view_for_form (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
+  let%map guests = populate_guests graph
+  and preferences = pref_for_users_assoc graph in
+  (* let guests_form = guests_form in *)
+  (* let value = Form.value guests_form in *)
+  Vdom.Node.div
+    [ guests
+    ; preferences
+      (* ; Vdom.Node.sexp_for_debugging ([%sexp_of: string Or_error.t] value) *)
+    ]
+;;
+
 let _ =
-  let open Magizhchi in
+  let open! Magizhchi in
   Start.start view_for_form
 ;;
