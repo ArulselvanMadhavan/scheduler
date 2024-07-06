@@ -94,15 +94,32 @@ let pref_for_users_assoc (graph : Bonsai.graph) : Node.t Bonsai.t =
 ;;
 
 let view_for_form (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
-  let%map variant_form = Variant.form graph
+  let%map form =
+    Form.Elements.Dropdown.list
+      ~init:`First_item
+      (module String)
+      ~equal:[%equal: String.t]
+      (Bonsai.return (List.map guest_prefs ~f:(fun (g, _h) -> g)))
+      graph
   and counter = pref_for_users_assoc graph in
-  let form = variant_form in
+  let form = form in
   let value = Form.value form in
   Vdom.Node.div
-    [ Form.view_as_vdom form
+    [ Form.view_as_vdom form (* ; Form.view_as_vdom dd_form *)
     ; counter
-    ; Vdom.Node.sexp_for_debugging ([%sexp_of: Variant.t Or_error.t] value)
+    ; Vdom.Node.sexp_for_debugging ([%sexp_of: string Or_error.t] value)
     ]
 ;;
 
-let _ = Start.start view_for_form
+let build_guests guest_prefs =
+  let make_cols = function
+    | c0 :: c1 :: _ -> Some (c0, Int.of_string c1)
+    | _ -> None
+  in
+  List.map guest_prefs ~f:(String.split ~on:',') |> List.filter_map ~f:make_cols
+;;
+
+let _ =
+  let open Magizhchi in
+  Start.start view_for_form
+;;

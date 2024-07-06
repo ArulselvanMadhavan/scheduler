@@ -1,2 +1,3 @@
 (library
- (name magizhchi))
+ (name magizhchi)
+ (libraries base))

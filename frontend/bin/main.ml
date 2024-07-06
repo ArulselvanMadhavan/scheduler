@@ -15,9 +15,6 @@ let html =
    .magizhchi-container {
    display: flex;
    }
-   .day-column {
-   border: solid;
-   }
    </style>
    </head>
    <body>
@@ -42,6 +39,7 @@ let respond_file ~content_type ?headers s =
 ;;
 
 let json_pattern = Base.String.Search_pattern.create ~case_sensitive:false "json"
+let csv_pattern = Base.String.Search_pattern.create ~case_sensitive:false "csv"
 
 let server ~port =
   let callback _conn req _body =
@@ -57,6 +55,8 @@ let server ~port =
         ()
     | uri when Base.String.Search_pattern.matches json_pattern uri ->
       respond_file ~content_type:"application/json" (Base.String.drop_prefix uri 1)
+    | uri when Base.String.Search_pattern.matches csv_pattern uri ->
+      respond_file ~content_type:"application/csv" (Base.String.drop_prefix uri 1)
     | _ -> respond_string ~content_type:"text/html" ~status:`Not_found ~body:"" ()
   in
   Server.create ~mode:(`TCP (`Port port)) (Server.make ~callback ())
