@@ -35,55 +35,67 @@ module Variant = struct
   ;;
 end
 
-let counter graph : Node.t Bonsai.t * int Bonsai.t =
-  let count, set_count = Bonsai.state 1 graph in
+let pref_node _k state set_state _graph : Node.t * int =
   let view =
-    let%map count = count
-    and set_count = set_count in
-    let is_disabled id = if Int.equal id count then Some Attr.disabled else None in
+    let is_disabled id = if Int.equal id state then Some Attr.disabled else None in
     Node.div
       [ Node.button
-          ~attrs:[ Attr.on_click (fun _ -> set_count 0); Attr.of_opt (is_disabled 0) ]
+          ~attrs:[ Attr.on_click (fun _ -> set_state 0); Attr.of_opt (is_disabled 0) ]
           [ Node.text "No" ]
       ; Node.button
-          ~attrs:[ Attr.on_click (fun _ -> set_count 1); Attr.of_opt (is_disabled 1) ]
+          ~attrs:[ Attr.on_click (fun _ -> set_state 1); Attr.of_opt (is_disabled 1) ]
           [ Node.text "Maybe" ]
       ; Node.button
-          ~attrs:[ Attr.on_click (fun _ -> set_count 2); Attr.of_opt (is_disabled 2) ]
+          ~attrs:[ Attr.on_click (fun _ -> set_state 2); Attr.of_opt (is_disabled 2) ]
           [ Node.text "Yes" ]
       ]
   in
-  view, count
+  view, state
 ;;
 
-let counters_for_users_assoc (graph : Bonsai.graph) : Node.t Bonsai.t =
+let pref_for_users_assoc (graph : Bonsai.graph) : Node.t Bonsai.t =
+  let tasks = [ "Task1", 1; "Task2", 0; "Task3", 2 ] in
   let tasks =
-    [ "Task1", (); "Task2", (); "Task3", () ] |> String.Map.of_alist_exn |> Bonsai.return
+    List.map
+      ~f:(fun (t, i) ->
+        let create_state g =
+          let s, set_state = Bonsai.state i g in
+          Bonsai.both s set_state
+        in
+        t, create_state)
+      tasks
+    |> Map.of_alist_exn (module String)
   in
+  let tasks = Bonsai.all_map tasks graph in
   let counters =
     Bonsai.assoc
       (module String)
       tasks
-      ~f:(fun _k _v graph ->
-        let view, _ = counter graph in
-        view)
+      ~f:(fun k v graph ->
+        let%map state_out = v
+        and k = k in
+        let init, set_state = state_out in
+        pref_node k init set_state graph)
       graph
   in
   let%map counters = counters in
-  Node.table
-    (counters
-     |> Map.to_alist
-     |> List.map ~f:(fun (key, vdom) ->
-       let open Node in
-       let name = td [ text key ] in
-       let counter = td [ vdom ] in
-       tr [ name; counter ]))
+  let task_state = Map.to_alist counters |> List.map ~f:(fun (s, (_n, c)) -> s, c) in
+  Node.div
+    [ Node.table
+        (counters
+         |> Map.to_alist
+         |> List.map ~f:(fun (key, (vdom, _)) ->
+           let open Node in
+           let name = td [ text key ] in
+           let counter = td [ vdom ] in
+           tr [ name; counter ]))
+    ; Node.sexp_for_debugging ([%sexp_of: (string * int) list] task_state)
+    ]
 ;;
 
 let view_for_form (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   let%map variant_form = Variant.form graph
-  and counter = counters_for_users_assoc graph in
-  (* let form = Form.both record_form variant_form in *)
+  and counter = pref_for_users_assoc graph in
   let form = variant_form in
   let value = Form.value form in
   Vdom.Node.div
