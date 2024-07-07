@@ -70,6 +70,7 @@ let fetch_tasks set_prefs guest =
     let%bind response = Bonsai_web.Effect.of_deferred_fun get_pref guest in
     set_prefs (handle_pref response)
   | None ->
+    Brr.Console.(log [ str guest; str "failure_tasks" ]);
     let _ =
       Core.Or_error.iter_error guest ~f:(fun err -> Brr.Console.(log [ str err ]))
     in
@@ -155,7 +156,7 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   in
   let%map form =
     Form.Elements.Dropdown.list
-      ~init:`Empty
+      ~init:`First_item
       ~extra_attrs:(build_dd_on_change guests set_prefs)
       (module String)
       ~equal:[%equal: String.t]
@@ -166,13 +167,13 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   and prefs = prefs
   and set_prefs = set_prefs in
   let is_empty_guests = Int.equal (Array.length guests) 0 in
-  let selected_guest = Form.value form in
   let update_guests () =
     let open Bonsai_web.Effect.Let_syntax in
     let%bind guests =
       Bonsai_web.Effect.of_deferred_fun load_guests Magizhchi.Constants.guests_csv
     in
-    Bonsai_web.Effect.all [ set_guests guests; fetch_tasks set_prefs selected_guest ]
+    Bonsai_web.Effect.all
+      [ set_guests guests; fetch_tasks set_prefs (Core.Or_error.return guests.(0)) ]
     |> Bonsai_web.Effect.ignore_m
   in
   let save_prefs prefs guest _ =
@@ -207,7 +208,7 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   Vdom.Node.div
     [ guest_nodes
     ; Node.button
-        ~attrs:[ Attr.on_click (save_prefs prefs selected_guest) ]
+        ~attrs:[ Attr.on_click (save_prefs prefs (Form.value form)) ]
         [ Node.text "Save Preferences" ]
     ; pref_nodes
     ; Node.sexp_for_debugging ([%sexp_of: (string * int) array] prefs)
