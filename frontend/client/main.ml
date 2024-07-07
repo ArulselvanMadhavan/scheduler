@@ -5,11 +5,12 @@ open! Core
 open! Bonsai_web.Cont.Bonsai.Let_syntax
 open Vdom
 
-let _pref_node _k state set_state _graph : Node.t * int =
+let _pref_node k state set_state _graph : Node.t * int =
   let view =
     let is_disabled id = if Int.equal id state then Some Attr.disabled else None in
     Node.div
-      [ Node.button
+      [ Node.text k
+      ; Node.button
           ~attrs:[ Attr.on_click (fun _ -> set_state 0); Attr.of_opt (is_disabled 0) ]
           [ Node.text "No" ]
       ; Node.button
@@ -23,7 +24,7 @@ let _pref_node _k state set_state _graph : Node.t * int =
   view, state
 ;;
 
-let pref_node prefs set_state idx (k, v) =
+let pref_node prefs set_state idx display_k (k, v) =
   let view =
     let is_disabled id = if Int.equal id v then Some Attr.disabled else None in
     let upd_state v =
@@ -32,15 +33,19 @@ let pref_node prefs set_state idx (k, v) =
       set_state new_arr
     in
     Node.div
-      [ Node.button
-          ~attrs:[ Attr.on_click (fun _ -> upd_state 0); Attr.of_opt (is_disabled 0) ]
-          [ Node.text "No" ]
-      ; Node.button
-          ~attrs:[ Attr.on_click (fun _ -> upd_state 1); Attr.of_opt (is_disabled 1) ]
-          [ Node.text "Maybe" ]
-      ; Node.button
-          ~attrs:[ Attr.on_click (fun _ -> upd_state 2); Attr.of_opt (is_disabled 2) ]
-          [ Node.text "Yes" ]
+      ~attrs:[ Attr.class_ "task-pref-row" ]
+      [ Node.label [ Node.text display_k ]
+      ; Node.div
+          [ Node.button
+              ~attrs:[ Attr.on_click (fun _ -> upd_state 0); Attr.of_opt (is_disabled 0) ]
+              [ Node.text "No" ]
+          ; Node.button
+              ~attrs:[ Attr.on_click (fun _ -> upd_state 1); Attr.of_opt (is_disabled 1) ]
+              [ Node.text "Maybe" ]
+          ; Node.button
+              ~attrs:[ Attr.on_click (fun _ -> upd_state 2); Attr.of_opt (is_disabled 2) ]
+              [ Node.text "Yes" ]
+          ]
       ]
   in
   view
@@ -144,7 +149,7 @@ let build_dd_on_change guests set_prefs =
     Attr.on_change (fun _e idx ->
       fetch_tasks set_prefs (Core.Or_error.return guests.(Int.of_string idx - 1)))
   in
-  [ on_change ]
+  [ on_change; Attr.class_ "guest-select" ]
 ;;
 
 let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
@@ -197,19 +202,44 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   let on_click =
     Attr.on_click (fun _ -> if is_empty_guests then update_guests () else Effect.Ignore)
   in
-  let guest_nodes =
-    Node.div
-      [ Node.button ~attrs:[ on_click ] [ Node.text "Load Guests" ]
-      ; Form.view_as_vdom form
-      ]
+  let group_tasks prefs =
+    let days_count = Array.length Magizhchi.Constants.days in
+    let mat = Array.create ~len:days_count [] in
+    Array.iteri prefs ~f:(fun i (t, p) ->
+      let t_parts = String.split ~on:'_' t in
+      let day = List.hd_exn t_parts in
+      Option.iter (Map.find Magizhchi.Constants.days_dict day) ~f:(fun day_idx ->
+        let xs = mat.(day_idx) in
+        mat.(day_idx) <- (i, t, String.concat ~sep:"_" (List.tl_exn t_parts), p) :: xs));
+    mat
   in
-  let nodes = Array.mapi ~f:(pref_node prefs set_prefs) prefs |> Array.to_list in
-  let pref_nodes = Node.div nodes in
+  let build_pref_nodes prefs_by_day =
+    Array.foldi prefs_by_day ~init:[] ~f:(fun i acc day_tasks ->
+      let day_tasks = List.rev day_tasks in
+      let xs =
+        List.map day_tasks ~f:(fun (idx, k, display_k, v) ->
+          pref_node prefs set_prefs idx display_k (k, v))
+      in
+      let day = Magizhchi.Constants.days.(i) in
+      let day = Node.div ~attrs:[ Attr.class_ "day-header" ] [ Node.text day ] in
+      let tasks = Node.div ~attrs:[ Attr.class_ "tasks-col" ] xs in
+      let result = Node.div ~attrs:[ Attr.class_ "day-col" ] [ day; tasks ] in
+      result :: acc)
+  in
+  let nodes = build_pref_nodes (group_tasks prefs) |> List.rev in
+  let pref_nodes = Node.div ~attrs:[ Attr.class_ "day-row" ] nodes in
   Vdom.Node.div
-    [ guest_nodes
-    ; Node.button
-        ~attrs:[ Attr.on_click (save_prefs prefs (Form.value form)) ]
-        [ Node.text "Save Preferences" ]
+    [ Node.div
+        ~attrs:[ Attr.class_ "button-row" ]
+        [ Node.button ~attrs:[ on_click ] [ Node.text "Load Guests" ]
+        ; Node.button
+            ~attrs:
+              [ Attr.on_click (save_prefs prefs (Form.value form))
+              ; (if Array.is_empty guests then Attr.disabled else Attr.empty)
+              ]
+            [ Node.text "Save Preferences" ]
+        ]
+    ; Form.view_as_vdom form
     ; pref_nodes
     ; Node.sexp_for_debugging ([%sexp_of: (string * int) array] prefs)
     ]

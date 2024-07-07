@@ -15,6 +15,45 @@ let html =
    .magizhchi-container {
    display: flex;
    }
+  .button-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      border: solid;
+  }
+  .button-row > button {
+     margin:auto;
+   }
+   table {
+    border: solid;
+    display: flex;
+    flex-direction: row;
+    margin: auto;
+    align-items: center;
+    justify-content: center;
+   }
+    .day-row {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+        margin: auto;
+        border: solid;
+    }
+    .day-col {
+      margin: 0 auto;
+    }
+    .day-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: solid;
+    }
+    .task-pref-row {
+        display: flex;
+        justify-content: space-between;
+    }
    </style>
    </head>
    <body>
