@@ -241,7 +241,7 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
         ]
     ; Form.view_as_vdom form
     ; pref_nodes
-    ; Node.sexp_for_debugging ([%sexp_of: (string * int) array] prefs)
+    (* ; Node.sexp_for_debugging ([%sexp_of: (string * int) array] prefs) *)
     ]
 ;;
 
