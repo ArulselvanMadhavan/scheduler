@@ -3,7 +3,7 @@ import os
 import csv
 import pandas as pd
 
-HEADER=["task", "pref(0,1,2)"]
+HEADER=["task", "pref"]
 PREF_DIR = "preferences"
 
 guests_df = pd.read_csv(f"{PREF_DIR}/guests.csv", dtype={"guest": str, "hours": float})

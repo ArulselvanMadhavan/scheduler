@@ -63,9 +63,10 @@ let handle_pref prefs =
 
 let fetch_tasks set_prefs guest =
   let open Bonsai_web.Effect.Let_syntax in
+  let open Magizhchi in
   match Core.Or_error.ok guest with
   | Some guest ->
-    let get_pref = Fn.compose Async_js.Http.get (Printf.sprintf "preferences/%s.csv") in
+    let get_pref = Fn.compose Async_js.Http.get Constants.guest_pref_dir in
     let%bind response = Bonsai_web.Effect.of_deferred_fun get_pref guest in
     set_prefs (handle_pref response)
   | None ->
@@ -166,14 +167,6 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   and set_prefs = set_prefs in
   let is_empty_guests = Int.equal (Array.length guests) 0 in
   let selected_guest = Form.value form in
-  (* let _ = *)
-  (*   Core.Or_error.map selected_guest ~f:(fun g -> *)
-  (*     Brr.Console.(log [ str "success"; str g ])) *)
-  (* in *)
-  (* let _ = *)
-  (*   Core.Or_error.iter_error selected_guest ~f:(fun e -> *)
-  (*     Brr.Console.(log [ str "err"; str e ])) *)
-  (* in *)
   let update_guests () =
     let open Bonsai_web.Effect.Let_syntax in
     let%bind guests =
@@ -181,6 +174,24 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
     in
     Bonsai_web.Effect.all [ set_guests guests; fetch_tasks set_prefs selected_guest ]
     |> Bonsai_web.Effect.ignore_m
+  in
+  let save_prefs prefs guest _ =
+    let open Bonsai_web.Effect.Let_syntax in
+    let open Magizhchi in
+    match Core.Or_error.ok guest with
+    | Some guest ->
+      let lines =
+        Array.map prefs ~f:(fun (t, p) -> Printf.sprintf "%s,%d" t p) |> Array.to_list
+      in
+      let lines =
+        String.concat ~sep:"," Constants.preferences_header :: lines
+        |> String.concat ~sep:"\n"
+      in
+      let body = Async_js.Http.Post_body.String lines in
+      let post_call q = Async_js.Http.post ~body (Constants.guest_pref_dir q) in
+      let%map _ = Bonsai_web.Effect.of_deferred_fun post_call guest in
+      ()
+    | _ -> Effect.Ignore
   in
   let on_click =
     Attr.on_click (fun _ -> if is_empty_guests then update_guests () else Effect.Ignore)
@@ -195,6 +206,9 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   let pref_nodes = Node.div nodes in
   Vdom.Node.div
     [ guest_nodes
+    ; Node.button
+        ~attrs:[ Attr.on_click (save_prefs prefs selected_guest) ]
+        [ Node.text "Save Preferences" ]
     ; pref_nodes
     ; Node.sexp_for_debugging ([%sexp_of: (string * int) array] prefs)
     ]

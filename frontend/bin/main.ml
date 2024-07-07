@@ -42,8 +42,13 @@ let json_pattern = Base.String.Search_pattern.create ~case_sensitive:false "json
 let csv_pattern = Base.String.Search_pattern.create ~case_sensitive:false "csv"
 
 let server ~port =
-  let callback _conn req _body =
+  let callback _conn req body =
     let uri = req |> Request.uri |> Uri.path in
+    let has_body =
+      match Request.has_body req with
+      | `No -> false
+      | _ -> true
+    in
     match uri with
     | "" | "/" | "/index.html" ->
       respond_string ~content_type:"text/html" ~status:`OK ~body:html ()
@@ -55,6 +60,14 @@ let server ~port =
         ()
     | uri when Base.String.Search_pattern.matches json_pattern uri ->
       respond_file ~content_type:"application/json" (Base.String.drop_prefix uri 1)
+    | uri when Base.String.Search_pattern.matches csv_pattern uri && has_body ->
+      let save_body body =
+        let _ =
+          Magizhchi.Csv_utils.write_csv ~fpath:(Base.String.drop_prefix uri 1) body
+        in
+        respond_string ~content_type:"application/csv" ~status:`OK ~body ()
+      in
+      Lwt.(Cohttp_lwt.(Body.to_string body) >>= save_body)
     | uri when Base.String.Search_pattern.matches csv_pattern uri ->
       respond_file ~content_type:"application/csv" (Base.String.drop_prefix uri 1)
     | _ -> respond_string ~content_type:"text/html" ~status:`Not_found ~body:"" ()
