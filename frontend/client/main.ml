@@ -52,6 +52,7 @@ let pref_node prefs set_state idx display_k (k, v) =
 ;;
 
 let handle_pref prefs =
+  Brr.Console.(log [ str prefs ]);
   let split_line line =
     match String.split line ~on:',' with
     | c0 :: c1 :: _ -> Some (c0, Int.of_string c1)
@@ -147,7 +148,7 @@ let build_dd_on_change guests set_prefs =
   and guests = guests in
   let on_change =
     Attr.on_change (fun _e idx ->
-      fetch_tasks set_prefs (Core.Or_error.return guests.(Int.of_string idx - 1)))
+      fetch_tasks set_prefs (Core.Or_error.return guests.(Int.of_string idx)))
   in
   [ on_change; Attr.class_ "guest-select" ]
 ;;
@@ -240,8 +241,7 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
             [ Node.text "Save Preferences" ]
         ]
     ; Form.view_as_vdom form
-    ; pref_nodes
-    (* ; Node.sexp_for_debugging ([%sexp_of: (string * int) array] prefs) *)
+    ; pref_nodes (* ; Node.sexp_for_debugging ([%sexp_of: (string * int) array] prefs) *)
     ]
 ;;
 

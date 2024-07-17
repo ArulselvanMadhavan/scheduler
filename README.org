@@ -12,3 +12,7 @@
    python preferences.py
    ```
    This script retains user preferences while adding new chores with a default preference of 1
+
+sat farmers mkt - Jorge
+tue farmers mkt - Alex K
+Shahanae cook - monday

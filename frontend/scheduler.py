@@ -55,6 +55,7 @@ chore_assignment += pulp.lpSum(happiness(c) * x[c] for c in possible_combos)
 
 # Every guest gets a per week max hours limit
 for guest, max_hours in GUESTS_AND_HOURS:
+    print(guest, max_hours)
     chore_assignment += (
         pulp.lpSum([get_hours(ch)[1] * x[(g, ch)]
                     for (g, ch) in possible_combos

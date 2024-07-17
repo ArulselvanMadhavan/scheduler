@@ -43,7 +43,7 @@ LAST_TWO_DAYS = DAYS_ABBR[-2:]
 def is_eligible_chore(wd, c):
     if wd in LAST_TWO_DAYS and c != EVERYDAY_CHORES_NAMES[0]:
         return False
-    elif wd == DAYS_ABBR[1] and c != EVERYDAY_CHORES_NAMES[0]:
+    elif wd == DAYS_ABBR[4] and c != EVERYDAY_CHORES_NAMES[0]:
         return False
     return True
 

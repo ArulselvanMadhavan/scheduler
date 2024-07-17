@@ -3,7 +3,7 @@ import os
 import csv
 import pandas as pd
 
-HEADER=["task", "pref(0,1,2)"]
+HEADER=["task", "pref"]
 PREF_DIR = "preferences"
 
 guests_df = pd.read_csv(f"{PREF_DIR}/guests.csv", dtype={"guest": str, "hours": float})
@@ -23,7 +23,7 @@ def create_prefs(file_name):
         w.writerows(rows)
 
 def merge_prefs(file_name):
-    df = pd.read_csv(file_name)
+    df = pd.read_csv(file_name, dtype={"task": str, "pref": int})
     df = df[HEADER]             # select only the columns of interest
     tasks_saved = set(df["task"].to_list())
     new_prefs = []
@@ -31,7 +31,7 @@ def merge_prefs(file_name):
         if c in tasks_saved:
             continue
         else:
-            new_prefs.append([c, 1])
+            new_prefs.append([c, 0])
     new_df = pd.DataFrame(data=new_prefs, columns=HEADER)
     updated_df = pd.concat([df, new_df])
     updated_df.to_csv(file_name, index=False)
