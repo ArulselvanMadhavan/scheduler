@@ -4,6 +4,7 @@ module Form = Bonsai_web_ui_form.With_automatic_view
 open! Core
 open! Bonsai_web.Cont.Bonsai.Let_syntax
 open Vdom
+module E = Form.Elements
 
 let _pref_node k state set_state _graph : Node.t * int =
   let view =
@@ -52,7 +53,6 @@ let pref_node prefs set_state idx display_k (k, v) =
 ;;
 
 let handle_pref prefs =
-  Brr.Console.(log [ str prefs ]);
   let split_line line =
     match String.split line ~on:',' with
     | c0 :: c1 :: _ -> Some (c0, Int.of_string c1)
@@ -130,16 +130,37 @@ let build_guests guest_prefs =
   List.map guest_prefs ~f:(String.split ~on:',') |> List.filter_map ~f:make_cols
 ;;
 
+let log_response response =
+  Core.Or_error.iter_error response ~f:(fun e ->
+    Brr.Console.(log [ str (Error.to_string_hum e) ]))
+;;
+
+let load_chores path =
+  let build_chore_spec line_id line =
+    let xs = String.split ~on:',' line |> List.map ~f:Base.String.strip in
+    match xs with
+    | [ ch; h; p ] -> Some (ch, Float.of_string h, Int.of_string p)
+    | _ ->
+      Brr.Console.(log [ str (Int.to_string line_id); str "Parse failed"; str line ]);
+      None
+  in
+  let open Async_kernel.Deferred.Let_syntax in
+  let%map response = Async_js.Http.get path in
+  match Core.Or_error.ok response with
+  | Some l ->
+    String.split_lines l |> Fn.flip List.drop 1 |> List.filter_mapi ~f:build_chore_spec
+  | None ->
+    log_response response;
+    []
+;;
+
 let load_guests path =
   let open Async_kernel.Deferred.Let_syntax in
   let%map response = Async_js.Http.get path in
   match Core.Or_error.ok response with
   | Some l -> String.split_lines l |> Fn.flip List.drop 1 |> build_guests |> Array.of_list
   | None ->
-    let _ =
-      Core.Or_error.iter_error response ~f:(fun e ->
-        Brr.Console.(log [ str (Error.to_string_hum e) ]))
-    in
+    log_response response;
     [||]
 ;;
 
@@ -156,6 +177,8 @@ let build_dd_on_change guests set_prefs =
 let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   let guests, set_guests = Bonsai.state [||] graph in
   let prefs, set_prefs = Bonsai.state [||] graph in
+  let edit_chores, set_edit_view = Bonsai.state false graph in
+  let chores, set_chores = Bonsai.state [] graph in
   let arr_to_list g =
     let%map g = g in
     Array.to_list g
@@ -171,7 +194,11 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   and guests = guests
   and set_guests = set_guests
   and prefs = prefs
-  and set_prefs = set_prefs in
+  and set_prefs = set_prefs
+  and edit_chores = edit_chores
+  and set_edit_view = set_edit_view
+  and chores = chores
+  and set_chores = set_chores in
   let is_empty_guests = Int.equal (Array.length guests) 0 in
   let update_guests () =
     let open Bonsai_web.Effect.Let_syntax in
@@ -200,7 +227,7 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
       ()
     | _ -> Effect.Ignore
   in
-  let on_click =
+  let load_guests =
     Attr.on_click (fun _ -> if is_empty_guests then update_guests () else Effect.Ignore)
   in
   let group_tasks prefs =
@@ -229,19 +256,37 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   in
   let nodes = build_pref_nodes (group_tasks prefs) |> List.rev in
   let pref_nodes = Node.div ~attrs:[ Attr.class_ "day-row" ] nodes in
+  let edit_misc_chores _e =
+    if edit_chores
+    then set_edit_view false
+    else
+      let open Bonsai_web.Effect.Let_syntax in
+      let%bind ch =
+        Bonsai_web.Effect.of_deferred_fun load_chores Magizhchi.Constants.misc_chores_csv
+      in
+      Bonsai_web.Effect.Many [ set_chores ch; set_edit_view true ]
+  in
   Vdom.Node.div
     [ Node.div
         ~attrs:[ Attr.class_ "button-row" ]
-        [ Node.button ~attrs:[ on_click ] [ Node.text "Load Guests" ]
+        [ Node.button ~attrs:[ load_guests ] [ Node.text "Load Guests" ]
         ; Node.button
             ~attrs:
               [ Attr.on_click (save_prefs prefs (Form.value form))
               ; (if Array.is_empty guests then Attr.disabled else Attr.empty)
               ]
             [ Node.text "Save Preferences" ]
+        ; Node.button
+            ~attrs:[ Attr.on_click edit_misc_chores ]
+            [ (if edit_chores
+               then Node.text "View Guest Preferences"
+               else Node.text "Edit Misc Chores")
+            ]
         ]
     ; Form.view_as_vdom form
-    ; pref_nodes (* ; Node.sexp_for_debugging ([%sexp_of: (string * int) array] prefs) *)
+    ; (if edit_chores
+       then Chores.view chores
+       else pref_nodes (* ; Node.sexp_for_debugging ([%sexp_of: string list] chores) *))
     ]
 ;;
 
