@@ -173,10 +173,19 @@ let build_dd_on_change guests set_prefs =
   [ on_change; Attr.class_ "guest-select" ]
 ;;
 
+type view =
+  | Guests
+  | Preferences
+  | Chores
+
+let is_chores_view = function
+  | Chores -> true
+  | _ -> false
+
 let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   let guests, set_guests = Bonsai.state [||] graph in
   let prefs, set_prefs = Bonsai.state [||] graph in
-  let edit_chores, set_edit_view = Bonsai.state false graph in
+  let cur_view, set_cur_view = Bonsai.state Guests graph in
   let chores, set_chores = Bonsai.state [||] graph in
   let arr_to_list g =
     let%map g = g in
@@ -194,8 +203,8 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   and set_guests = set_guests
   and prefs = prefs
   and set_prefs = set_prefs
-  and edit_chores = edit_chores
-  and set_edit_view = set_edit_view
+  and cur_view = cur_view
+  and set_cur_view = set_cur_view
   and chores = chores
   and set_chores = set_chores in
   let is_empty_guests = Int.equal (Array.length guests) 0 in
@@ -252,15 +261,20 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   in
   let nodes = build_pref_nodes (group_tasks prefs) |> List.rev in
   let pref_nodes = Node.div ~attrs:[ Attr.class_ "day-row" ] nodes in
-  let chores_click _e =
+  let chores_click cur_view _e =
     let open Eff.Let_syntax in
-    if edit_chores
-    then (
+    match cur_view with
+    | Chores ->
       let%bind _ = Chores.save_chores chores in
-      set_edit_view false)
-    else (
+      set_cur_view Preferences
+| _ ->
       let%bind ch = Eff.of_deferred_fun load_chores Magizhchi.Constants.misc_chores_csv in
-      Eff.Many [ set_chores ch; set_edit_view true ])
+      Eff.Many [ set_chores ch; set_cur_view Chores ]
+  in
+  let main_nodes = match cur_view with
+    | Chores -> Chores.view set_chores chores
+    | Preferences -> pref_nodes
+    | Guests -> Guests.view set_guests guests
   in
   Vdom.Node.div
     [ Node.div
@@ -273,15 +287,11 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
               ]
             [ Node.text "Save Preferences" ]
         ; Node.button
-            ~attrs:[ Attr.on_click chores_click ]
-            [ (if edit_chores then Node.text "Save chores" else Node.text "Edit chores") ]
+            ~attrs:[ Attr.on_click (chores_click cur_view)]
+            [ (if is_chores_view cur_view then Node.text "Save chores" else Node.text "Edit chores") ]
         ]
     ; Form.view_as_vdom form
-    ; (if edit_chores
-       then Chores.view set_chores chores
-       else
-         pref_nodes
-         (* ; Node.sexp_for_debugging ([%sexp_of: (string * float * int) array] chores) *))
+    ; main_nodes
     ]
 ;;
 
