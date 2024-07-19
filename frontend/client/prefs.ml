@@ -145,12 +145,15 @@ let save_prefs prefs guest =
   | _ -> F.Ignore
 ;;
 
-let prefs_btn cur_view dd_form prefs =
+let prefs_btn cur_view set_cur_view dd_form prefs =
   let%map prefs = prefs
   and cur_view = cur_view
-  and dd_form = dd_form in
+  and dd_form = dd_form
+  and set_cur_view = set_cur_view in
   let on_save _ =
-    if Array.is_empty prefs then F.Ignore else save_prefs prefs (Form.value dd_form)
+    match cur_view with
+    | Utils.Preferences -> save_prefs prefs (Form.value dd_form)
+    | _ -> set_cur_view Utils.Preferences
   in
   let btn_text =
     match cur_view with
@@ -161,7 +164,7 @@ let prefs_btn cur_view dd_form prefs =
   Node.button ~attrs:[ Attr.on_click on_save ] [ Node.text btn_text ]
 ;;
 
-let view cur_view graph =
+let view cur_view set_cur_view graph =
   let prefs, set_prefs = Bonsai.state [||] graph in
   let guests, set_guests = Bonsai.state [||] graph in
   let unit_form = Bonsai.return (Form.return ()) in
@@ -174,7 +177,7 @@ let view cur_view graph =
       (arr_to_list guests)
       graph
   in
-  let prefs_btn = prefs_btn cur_view dd_form prefs in
+  let prefs_btn = prefs_btn cur_view set_cur_view dd_form prefs in
   let%map prefs = prefs
   and set_prefs = set_prefs
   and dd_form = dd_form
