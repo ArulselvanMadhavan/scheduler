@@ -73,12 +73,9 @@ let chores_btn chores set_chores set_cur_view graph =
   let open F.Let_syntax in
   let on_edit () =
     let%bind ch = F.of_deferred_fun load_chores Magizhchi.Constants.misc_chores_csv in
-    F.Many [ set_chores ch; set_cur_view Utils.Chores ]
+    F.all_unit [ set_chores ch; set_cur_view Utils.Chores ]
   in
-  let on_save () =
-    let%bind _ = save_chores chores in
-    set_cur_view Utils.Preferences
-  in
+  let on_save () = F.all_unit [ save_chores chores; set_cur_view Utils.Preferences ] in
   Utils.make_btn ~text:"Chores" ~state:(is_edit, set_edit) ~on_click:(on_edit, on_save)
 ;;
 
