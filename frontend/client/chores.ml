@@ -41,7 +41,52 @@ let num_attrs ~step ~min ~max =
   [ step_attr; min_attr; max_attr ]
 ;;
 
-let view set_chores chores =
+let load_chores path =
+  let build_chore_spec line_id line =
+    let xs = String.split ~on:',' line |> List.map ~f:Base.String.strip in
+    match xs with
+    | [ ch; h; p ] -> Some (ch, Float.of_string h, Int.of_string p)
+    | _ ->
+      Brr.Console.(log [ str (Int.to_string line_id); str "Parse failed"; str line ]);
+      None
+  in
+  let open Async_kernel.Deferred.Let_syntax in
+  let%map response = Async_js.Http.get path in
+  match Core.Or_error.ok response with
+  | Some l ->
+    String.split_lines l
+    |> Fn.flip List.drop 1
+    |> List.filter_mapi ~f:build_chore_spec
+    |> Array.of_list
+  | None ->
+    Utils.log_response response;
+    [||]
+;;
+
+let chores_btn chores set_chores set_cur_view graph =
+  let is_edit, set_edit = Bonsai.state true graph in
+  let%map chores = chores
+  and set_chores = set_chores
+  and set_cur_view = set_cur_view
+  and is_edit = is_edit
+  and set_edit = set_edit in
+  let open F.Let_syntax in
+  let on_edit () =
+    let%bind ch = F.of_deferred_fun load_chores Magizhchi.Constants.misc_chores_csv in
+    F.Many [ set_chores ch; set_cur_view Utils.Chores ]
+  in
+  let on_save () =
+    let%bind _ = save_chores chores in
+    set_cur_view Utils.Preferences
+  in
+  Utils.make_btn ~text:"Chores" ~state:(is_edit, set_edit) ~on_click:(on_edit, on_save)
+;;
+
+let view set_cur_view graph =
+  let chores, set_chores = Bonsai.state [||] graph in
+  let%map chores = chores
+  and set_chores = set_chores
+  and btn = chores_btn chores set_chores set_cur_view graph in
   let chore_edit i (c, h, p) =
     let h = Float.to_string_hum ~decimals:2 h in
     let p = Int.to_string p in
@@ -80,5 +125,5 @@ let view set_chores chores =
   let add_new = Node.button ~attrs:[ Attr.on_click on_click ] [ Node.text "Add new" ] in
   let out = Array.mapi chores ~f:chore_edit |> Array.to_list in
   let out = List.append out [ add_new ] in
-  Node.div out
+  btn, Node.div out
 ;;
