@@ -5,6 +5,7 @@ open! Core
 open! Bonsai_web.Cont.Bonsai.Let_syntax
 open Vdom
 module E = Form.Elements
+module Eff = Bonsai_web.Effect
 
 let _pref_node k state set_state _graph : Node.t * int =
   let view =
@@ -68,19 +69,19 @@ let handle_pref prefs =
 ;;
 
 let fetch_tasks set_prefs guest =
-  let open Bonsai_web.Effect.Let_syntax in
+  let open Eff.Let_syntax in
   let open Magizhchi in
   match Core.Or_error.ok guest with
   | Some guest ->
     let get_pref = Fn.compose Async_js.Http.get Constants.guest_pref_dir in
-    let%bind response = Bonsai_web.Effect.of_deferred_fun get_pref guest in
+    let%bind response = Eff.of_deferred_fun get_pref guest in
     set_prefs (handle_pref response)
   | None ->
     Brr.Console.(log [ str guest; str "failure_tasks" ]);
     let _ =
       Core.Or_error.iter_error guest ~f:(fun err -> Brr.Console.(log [ str err ]))
     in
-    Effect.Ignore
+    Eff.Ignore
 ;;
 
 let _pref_for_users_assoc tasks (graph : Bonsai.graph) : Node.t Bonsai.t =
@@ -130,11 +131,6 @@ let build_guests guest_prefs =
   List.map guest_prefs ~f:(String.split ~on:',') |> List.filter_map ~f:make_cols
 ;;
 
-let log_response response =
-  Core.Or_error.iter_error response ~f:(fun e ->
-    Brr.Console.(log [ str (Error.to_string_hum e) ]))
-;;
-
 let load_chores path =
   let build_chore_spec line_id line =
     let xs = String.split ~on:',' line |> List.map ~f:Base.String.strip in
@@ -148,10 +144,13 @@ let load_chores path =
   let%map response = Async_js.Http.get path in
   match Core.Or_error.ok response with
   | Some l ->
-    String.split_lines l |> Fn.flip List.drop 1 |> List.filter_mapi ~f:build_chore_spec
+    String.split_lines l
+    |> Fn.flip List.drop 1
+    |> List.filter_mapi ~f:build_chore_spec
+    |> Array.of_list
   | None ->
-    log_response response;
-    []
+    Utils.log_response response;
+    [||]
 ;;
 
 let load_guests path =
@@ -160,7 +159,7 @@ let load_guests path =
   match Core.Or_error.ok response with
   | Some l -> String.split_lines l |> Fn.flip List.drop 1 |> build_guests |> Array.of_list
   | None ->
-    log_response response;
+    Utils.log_response response;
     [||]
 ;;
 
@@ -178,7 +177,7 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   let guests, set_guests = Bonsai.state [||] graph in
   let prefs, set_prefs = Bonsai.state [||] graph in
   let edit_chores, set_edit_view = Bonsai.state false graph in
-  let chores, set_chores = Bonsai.state [] graph in
+  let chores, set_chores = Bonsai.state [||] graph in
   let arr_to_list g =
     let%map g = g in
     Array.to_list g
@@ -201,16 +200,13 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   and set_chores = set_chores in
   let is_empty_guests = Int.equal (Array.length guests) 0 in
   let update_guests () =
-    let open Bonsai_web.Effect.Let_syntax in
-    let%bind guests =
-      Bonsai_web.Effect.of_deferred_fun load_guests Magizhchi.Constants.guests_csv
-    in
-    Bonsai_web.Effect.all
-      [ set_guests guests; fetch_tasks set_prefs (Core.Or_error.return guests.(0)) ]
-    |> Bonsai_web.Effect.ignore_m
+    let open Eff.Let_syntax in
+    let%bind guests = Eff.of_deferred_fun load_guests Magizhchi.Constants.guests_csv in
+    Eff.all [ set_guests guests; fetch_tasks set_prefs (Core.Or_error.return guests.(0)) ]
+    |> Eff.ignore_m
   in
   let save_prefs prefs guest _ =
-    let open Bonsai_web.Effect.Let_syntax in
+    let open Eff.Let_syntax in
     let open Magizhchi in
     match Core.Or_error.ok guest with
     | Some guest ->
@@ -223,12 +219,12 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
       in
       let body = Async_js.Http.Post_body.String lines in
       let post_call q = Async_js.Http.post ~body (Constants.guest_pref_dir q) in
-      let%map _ = Bonsai_web.Effect.of_deferred_fun post_call guest in
+      let%map _ = Eff.of_deferred_fun post_call guest in
       ()
-    | _ -> Effect.Ignore
+    | _ -> Eff.Ignore
   in
   let load_guests =
-    Attr.on_click (fun _ -> if is_empty_guests then update_guests () else Effect.Ignore)
+    Attr.on_click (fun _ -> if is_empty_guests then update_guests () else Eff.Ignore)
   in
   let group_tasks prefs =
     let days_count = Array.length Magizhchi.Constants.days in
@@ -256,15 +252,15 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
   in
   let nodes = build_pref_nodes (group_tasks prefs) |> List.rev in
   let pref_nodes = Node.div ~attrs:[ Attr.class_ "day-row" ] nodes in
-  let edit_misc_chores _e =
+  let chores_click _e =
+    let open Eff.Let_syntax in
     if edit_chores
-    then set_edit_view false
-    else
-      let open Bonsai_web.Effect.Let_syntax in
-      let%bind ch =
-        Bonsai_web.Effect.of_deferred_fun load_chores Magizhchi.Constants.misc_chores_csv
-      in
-      Bonsai_web.Effect.Many [ set_chores ch; set_edit_view true ]
+    then (
+      let%bind _ = Chores.save_chores chores in
+      set_edit_view false)
+    else (
+      let%bind ch = Eff.of_deferred_fun load_chores Magizhchi.Constants.misc_chores_csv in
+      Eff.Many [ set_chores ch; set_edit_view true ])
   in
   Vdom.Node.div
     [ Node.div
@@ -277,16 +273,15 @@ let view (graph : Bonsai.graph) : Vdom.Node.t Bonsai.t =
               ]
             [ Node.text "Save Preferences" ]
         ; Node.button
-            ~attrs:[ Attr.on_click edit_misc_chores ]
-            [ (if edit_chores
-               then Node.text "View Guest Preferences"
-               else Node.text "Edit Misc Chores")
-            ]
+            ~attrs:[ Attr.on_click chores_click ]
+            [ (if edit_chores then Node.text "Save chores" else Node.text "Edit chores") ]
         ]
     ; Form.view_as_vdom form
     ; (if edit_chores
-       then Chores.view chores
-       else pref_nodes (* ; Node.sexp_for_debugging ([%sexp_of: string list] chores) *))
+       then Chores.view set_chores chores
+       else
+         pref_nodes
+         (* ; Node.sexp_for_debugging ([%sexp_of: (string * float * int) array] chores) *))
     ]
 ;;
 
