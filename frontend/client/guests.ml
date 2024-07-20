@@ -63,7 +63,7 @@ let check_prefs guests =
   let old_gs_hs = Hash_set.create ~size:(List.length old_gs) (module String) in
   List.iter old_gs ~f:(Hash_set.add old_gs_hs);
   let ins_gs = List.filter new_gs ~f:(fun g -> not (Hash_set.mem old_gs_hs g)) in
-  let _del_gs = List.filter old_gs ~f:(fun g -> not (Hash_set.mem new_gs_hs g)) in
+  let del_gs = List.filter old_gs ~f:(fun g -> not (Hash_set.mem new_gs_hs g)) in
   let%bind response = F.of_deferred_fun Async_js.Http.get Constants.misc_chores_csv in
   let prefs =
     match Core.Or_error.ok response with
@@ -75,8 +75,18 @@ let check_prefs guests =
       |> Array.of_list
     | _ -> [||]
   in
-  List.map ins_gs ~f:(fun g -> Prefs.save_prefs prefs (Core.Or_error.return g))
-  |> F.all_unit
+  let body =
+    List.map ~f:Constants.guest_pref_dir del_gs
+    |> String.concat ~sep:","
+    |> Async_js.Http.Post_body.String
+  in
+  let del_gs = F.of_deferred_fun (Async_js.Http.post ~body) Constants.delete_guests in
+  let del_gs = F.map del_gs ~f:(Fn.const ()) in
+  Brr.Console.(log [ str body ]);
+  let ins_gs =
+    List.map ins_gs ~f:(fun g -> Prefs.save_prefs prefs (Core.Or_error.return g))
+  in
+  F.all_unit (del_gs :: ins_gs)
 ;;
 
 let guests_btn guests set_guests set_cur_view graph =

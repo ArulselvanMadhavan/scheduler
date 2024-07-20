@@ -1,4 +1,6 @@
 open Cohttp_lwt_unix
+open Magizhchi
+open Base
 
 let default_port = 8421
 
@@ -85,7 +87,7 @@ let server ~port =
       | `No -> false
       | _ -> true
     in
-    let guests_with_prefs = "/" ^ Magizhchi.Constants.guests_with_preferences in
+    let guests_with_prefs = "/" ^ Constants.guests_with_preferences in
     match uri with
     | "" | "/" | "/index.html" ->
       respond_string ~content_type:"text/html" ~status:`OK ~body:html ()
@@ -99,21 +101,26 @@ let server ~port =
       respond_file ~content_type:"application/json" (Base.String.drop_prefix uri 1)
     | uri when Base.String.Search_pattern.matches csv_pattern uri && has_body ->
       let save_body body =
-        let _ =
-          Magizhchi.Csv_utils.write_csv ~fpath:(Base.String.drop_prefix uri 1) body
-        in
+        let _ = Csv_utils.write_csv ~fpath:(Base.String.drop_prefix uri 1) body in
         respond_string ~content_type:"application/csv" ~status:`OK ~body ()
       in
       Lwt.(Cohttp_lwt.(Body.to_string body) >>= save_body)
     | uri when Base.String.is_substring uri ~substring:guests_with_prefs ->
       let body =
-        Sys.readdir Magizhchi.Constants.preferences_dir
-        |> Base.Array.filter ~f:(Base.Fn.compose (String.equal ".csv") Filename.extension)
-        |> Base.Array.map ~f:(Base.Fn.flip Filename.chop_suffix ".csv")
+        Stdlib.Sys.readdir Constants.preferences_dir
+        |> Base.Array.filter
+             ~f:(Fn.compose (String.equal ".csv") Stdlib.Filename.extension)
+        |> Base.Array.map ~f:(Fn.flip Stdlib.Filename.chop_suffix ".csv")
         |> Array.to_list
-        |> String.concat ","
+        |> String.concat ~sep:","
       in
       respond_string ~content_type:"text/html" ~status:`OK ~body ()
+    | uri when has_body && String.is_substring uri ~substring:Constants.delete_guests ->
+      let handle_body b =
+        String.split ~on:',' b |> List.iter ~f:Stdlib.Sys.remove;
+        respond_string ~content_type:"text/html" ~status:`OK ~body:"" ()
+      in
+      Lwt.(Cohttp_lwt.(Body.to_string body) >>= handle_body)
     | uri when Base.String.Search_pattern.matches csv_pattern uri ->
       respond_file ~content_type:"application/csv" (Base.String.drop_prefix uri 1)
     | _ -> respond_string ~content_type:"text/html" ~status:`Not_found ~body:"" ()
