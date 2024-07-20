@@ -3,25 +3,40 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import sys
-from utils import TOTAL_CHORES_NAMES_DICT
-from utils import TOTAL_CHORES_NAMES
-from utils import TOTAL_CHORES_HOURS
-from utils import TOTAL_CHORES_PRIORITY
+# from utils import CHORES_NAMES_DICT
+# from utils import CHORES_NAMES
+# from utils import CHORES_HOURS
+# from utils import CHORES_PRIORITY
 from utils import export_schedule, get_hours
 import csv
-from preferences import PREF_DIR
-from preferences import GUESTS
-from preferences import GUESTS_AND_HOURS
-# Happiness is a function
-# maximize chore hours
-# prefer weekly chore assignment first
-# every guest should have a maximum of 4 hours
-# every guest should be assigned to a maximum of 1 chore per day
+# from preferences import GUESTS
+# from preferences import GUESTS_AND_HOURS
+
+HEADER=["task", "pref"]
+guests_df = pd.read_csv(f"guests/guests.csv", dtype={"guest": str, "hours": float})
+# Filter eligible guests
+guests_df = guests_df[guests_df['hours'] > 0]
+GUESTS = guests_df['guest'].to_list()
+HOURS = guests_df['hours'].to_list()
+GUESTS_AND_HOURS = zip(GUESTS, HOURS)
+
+chores_df = pd.read_csv("chores/misc_chores.csv")
+chores_df["priority"] = chores_df["priority"].astype(int)
+chores_df = chores_df[chores_df["priority"] > 0]
+
+CHORES_NAMES = chores_df["chore_name"].to_list()
+
+CHORES_SET = set(CHORES_NAMES)
+
+CHORES_HOURS = chores_df["hours"].to_list()
+CHORES_PRIORITY = chores_df["priority"].to_list()
+CHORES_NAMES_DICT = {CHORES_NAMES[ch] : ch
+                           for ch in range(0, len(CHORES_NAMES))}
 PREFERENCES_DICT = {}
 
 for g in GUESTS:
     PREFERENCES_DICT[g] = {}
-    with open(f"{PREF_DIR}/{g}.csv", "r+") as f:
+    with open(f"preferences/{g}.csv", "r+") as f:
         r = csv.reader(f)
         next(r)                 # Skip header
         for row in r:
@@ -31,7 +46,7 @@ def happiness(c):
     g, ch = c
     factor = 1.0
     ch_idx, hours = get_hours(ch)
-    chore_priority = TOTAL_CHORES_PRIORITY[ch_idx]
+    chore_priority = CHORES_PRIORITY[ch_idx]
     factor += (hours + chore_priority)
     # Preference multipler
     try:
@@ -42,7 +57,7 @@ def happiness(c):
     return factor * pref * chore_priority
 
 ### LP setup ###
-possible_combos = [(g, tc) for g in GUESTS for tc in TOTAL_CHORES_NAMES
+possible_combos = [(g, tc) for g in GUESTS for tc in CHORES_NAMES
                    if PREFERENCES_DICT[g][tc] != 0]
 
 x = pulp.LpVariable.dicts(
@@ -63,9 +78,9 @@ for guest, max_hours in GUESTS_AND_HOURS:
     )
 
 # every chore with the highest priority must have a guest assigned to it
-for chore in TOTAL_CHORES_NAMES:
-    ch_idx = TOTAL_CHORES_NAMES_DICT[chore]
-    ch_prio = TOTAL_CHORES_PRIORITY[ch_idx]
+for chore in CHORES_NAMES:
+    ch_idx = CHORES_NAMES_DICT[chore]
+    ch_prio = CHORES_PRIORITY[ch_idx]
     # if ch_prio > 1:
     #     # High priority chores should have a guest assigned to their name
     #     chore_assignment += (
@@ -88,4 +103,4 @@ print(f"The chosen tables are out of a total of {len(possible_combos)}:")
 
 # print(chore_assignment)
 
-export_schedule(x, possible_combos, chore_assignment)
+export_schedule(CHORES_NAMES_DICT, CHORES_HOURS, x, possible_combos, chore_assignment)

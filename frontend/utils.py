@@ -12,84 +12,6 @@ DAYS_ABBR = [
 ]
 DAYS_DICT = {DAYS_ABBR[d]:d for d in range(len(DAYS_ABBR))}
 
-EVERYDAY_CHORES_NAMES = [
-    "AM_clean",
-    "cook_1",
-#    "cook_2",
-    "PM_clean_1",
-    "PM_clean_2"
-]
-
-EVERYDAY_CHORES_HOURS = [
-    0.5,
-    2,
-#    2,
-    1,
-    1
-]
-
-PRIORITY_MIN = 1
-PRIORITY_MAX = 5
-EVERYDAY_CHORES_PRIORITY = [
-    3,
-    3,
-#    3,
-    3,
-    3
-]
-
-LAST_TWO_DAYS = DAYS_ABBR[-2:]
-
-def is_eligible_chore(wd, c):
-    if wd in LAST_TWO_DAYS and c != EVERYDAY_CHORES_NAMES[0]:
-        return False
-    elif wd == DAYS_ABBR[4] and c != EVERYDAY_CHORES_NAMES[0]:
-        return False
-    return True
-
-WEEKLY_CHORES_NAMES_RAW = [ wd + "_" + c for wd in DAYS_ABBR
-                        for c in EVERYDAY_CHORES_NAMES]
-
-WEEKLY_CHORES_HOURS_RAW = [c for _ in DAYS_ABBR
-                       for c in EVERYDAY_CHORES_HOURS]
-
-ELIGIBLE_WEEKLY_CHORES = [is_eligible_chore(wd, c) for wd in DAYS_ABBR
-                          for c in EVERYDAY_CHORES_NAMES]
-
-WEEKLY_CHORES_NAMES = [WEEKLY_CHORES_NAMES_RAW[i]
-                       for i in range(len(WEEKLY_CHORES_NAMES_RAW))
-                       if ELIGIBLE_WEEKLY_CHORES[i]]
-
-WEEKLY_CHORES_HOURS = [WEEKLY_CHORES_HOURS_RAW[i]
-                       for i in range(len(WEEKLY_CHORES_HOURS_RAW))
-                       if ELIGIBLE_WEEKLY_CHORES[i]]
-
-WEEKLY_CHORES_PRIORITY = [c for _ in DAYS_ABBR
-                          for c in EVERYDAY_CHORES_PRIORITY]
-
-WEEKLY_CHORES_NAMES_SET = set(WEEKLY_CHORES_NAMES)
-
-
-
-
-misc_df = pd.read_csv("chores/misc_chores.csv")
-misc_df["priority"] = misc_df["priority"].astype(int)
-misc_df = misc_df[misc_df["priority"] > 0]
-
-MISC_CHORES_NAMES = misc_df["chore_name"].to_list()
-
-MISC_CHORES_SET = set(MISC_CHORES_NAMES)
-
-MISC_CHORES_HOURS = misc_df["hours"].to_list()
-MISC_CHORES_PRIORITY = misc_df["priority"].to_list()
-
-TOTAL_CHORES_NAMES = WEEKLY_CHORES_NAMES + MISC_CHORES_NAMES
-TOTAL_CHORES_SET = set(TOTAL_CHORES_NAMES)
-TOTAL_CHORES_HOURS = WEEKLY_CHORES_HOURS + MISC_CHORES_HOURS
-TOTAL_CHORES_PRIORITY = WEEKLY_CHORES_PRIORITY + MISC_CHORES_PRIORITY
-TOTAL_CHORES_NAMES_DICT = {TOTAL_CHORES_NAMES[ch] : ch
-                           for ch in range(0, len(TOTAL_CHORES_NAMES))}
-
 def get_day(ch):
     return ch.split("_")[0]
 
@@ -97,9 +19,9 @@ def get_chore(ch):
     xs = ch.split("_")[1:]
     return "_".join(xs)
 
-def get_hours(ch):
-    ch_idx = TOTAL_CHORES_NAMES_DICT[ch]
-    hours = TOTAL_CHORES_HOURS[ch_idx]
+def get_hours(CHORES_NAMES_DICT, CHORES_HOURS, ch):
+    ch_idx = CHORES_NAMES_DICT[ch]
+    hours = CHORES_HOURS[ch_idx]
     return ch_idx, hours
 
 def multiple_dfs(df_list, offsets, sheets, file_name, spaces):
@@ -143,7 +65,8 @@ def multiple_dfs(df_list, offsets, sheets, file_name, spaces):
                 # merge cells using the first and last indices
                 worksheet.merge_range(u[0], 0, u[-1], 0, df.loc[u[0],'day'], merge_format)
 
-def export_schedule(x, possible_combos, chore_assignment):
+def export_schedule(CHORES_NAMES_DICT, CHORES_HOURS,
+                    x, possible_combos, chore_assignment):
     # Solution found
     if chore_assignment.status == 1:
         # Keep Sunday last
@@ -155,7 +78,7 @@ def export_schedule(x, possible_combos, chore_assignment):
         for c in possible_combos:
             if x[c].value() == 1.0:
                 g, ch = c
-                _, hours = get_hours(ch)
+                _, hours = get_hours(CHORES_NAMES_DICT, CHORES_HOURS, ch)
                 is_weekly = get_day(ch) in DAYS_ABBR
                 entry = (ch, g, hours)
                 if is_weekly:
@@ -170,19 +93,21 @@ def export_schedule(x, possible_combos, chore_assignment):
                     misc_data.append(entry)
 
         for k, v in data.items():
-            data[k] = v + ([None] * (max_col_len - len(v)))
-            data[k] = sorted(data[k], key=lambda entry: TOTAL_CHORES_NAMES_DICT[entry[0]]
-                   if entry is not None else sys.maxsize)
-            # cut day from chore name
-            data[k] = [None if cg is None else (get_chore(cg[0]), cg[1], cg[2]) for cg in data[k]]
+            if v is not None:
+                data[k] = v + ([None] * (max_col_len - len(v)))
+                data[k] = sorted(data[k], key=lambda entry: TOTAL_CHORES_NAMES_DICT[entry[0]]
+                       if entry is not None else sys.maxsize)
+                # cut day from chore name
+                data[k] = [None if cg is None else (get_chore(cg[0]), cg[1], cg[2]) for cg in data[k]]
         columns = ["day", "tasks", "owner", "hours"]
         timely_tasks = []
         for day, tasks in data.items():
-            for t in tasks:
-                if t is not None:
-                    ch, g, hours = t
-                    timely_tasks.append([day, ch, g, hours])
-            timely_tasks.append([day, None, None, None])
+            if tasks is not None:
+                for t in tasks:
+                    if t is not None:
+                        ch, g, hours = t
+                        timely_tasks.append([day, ch, g, hours])
+                timely_tasks.append([day, None, None, None])
 
         guest_hours_dict = {}
         for r in timely_tasks:

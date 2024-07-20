@@ -1,52 +1,43 @@
-from utils import TOTAL_CHORES_NAMES, TOTAL_CHORES_SET
-import os
-import csv
-import pandas as pd
+# from utils import TOTAL_CHORES_NAMES, TOTAL_CHORES_SET
+# import os
+# import csv
+# import pandas as pd
 
-HEADER=["task", "pref"]
-PREF_DIR = "preferences"
 
-guests_df = pd.read_csv(f"{PREF_DIR}/guests.csv", dtype={"guest": str, "hours": float})
-# Filter eligible guests
-guests_df = guests_df[guests_df['hours'] > 0]
-GUESTS = guests_df['guest'].to_list()
-HOURS = guests_df['hours'].to_list()
-GUESTS_AND_HOURS = zip(GUESTS, HOURS)
+# def create_prefs(file_name):
+#     rows = []
+#     for c in TOTAL_CHORES_NAMES:
+#         rows.append([c, 1])
+#     with open(file_name, "w+") as f:
+#         w = csv.writer(f)
+#         w.writerow(HEADER)
+#         w.writerows(rows)
 
-def create_prefs(file_name):
-    rows = []
-    for c in TOTAL_CHORES_NAMES:
-        rows.append([c, 1])
-    with open(file_name, "w+") as f:
-        w = csv.writer(f)
-        w.writerow(HEADER)
-        w.writerows(rows)
+# def merge_prefs(file_name):
+#     df = pd.read_csv(file_name, dtype={"task": str, "pref": int})
+#     df = df[HEADER]             # select only the columns of interest
+#     tasks_saved = set(df["task"].to_list())
+#     new_prefs = []
+#     for c in TOTAL_CHORES_SET:
+#         if c in tasks_saved:
+#             continue
+#         else:
+#             new_prefs.append([c, 0])
+#     new_df = pd.DataFrame(data=new_prefs, columns=HEADER)
+#     updated_df = pd.concat([df, new_df])
+#     updated_df.to_csv(file_name, index=False)
 
-def merge_prefs(file_name):
-    df = pd.read_csv(file_name, dtype={"task": str, "pref": int})
-    df = df[HEADER]             # select only the columns of interest
-    tasks_saved = set(df["task"].to_list())
-    new_prefs = []
-    for c in TOTAL_CHORES_SET:
-        if c in tasks_saved:
-            continue
-        else:
-            new_prefs.append([c, 0])
-    new_df = pd.DataFrame(data=new_prefs, columns=HEADER)
-    updated_df = pd.concat([df, new_df])
-    updated_df.to_csv(file_name, index=False)
+# def make_tasks():
+#     for g in GUESTS:
+#         file_name = f"{PREF_DIR}/{g}.csv"
+#         if os.path.isfile(file_name):
+#             merge_prefs(file_name)
+#         else:
+#             create_prefs(file_name)
 
-def make_tasks():
-    for g in GUESTS:
-        file_name = f"{PREF_DIR}/{g}.csv"
-        if os.path.isfile(file_name):
-            merge_prefs(file_name)
-        else:
-            create_prefs(file_name)
-
-if __name__ == "__main__":
-    try:
-        os.makedirs(PREF_DIR, exist_ok=True)
-    except OSError:
-        None
-    make_tasks()
+# if __name__ == "__main__":
+#     try:
+#         os.makedirs(PREF_DIR, exist_ok=True)
+#     except OSError:
+#         None
+#     make_tasks()
