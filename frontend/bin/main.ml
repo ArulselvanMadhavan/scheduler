@@ -125,8 +125,9 @@ let server ~scheduler ~port =
       respond_file ~content_type:"application/csv" (Base.String.drop_prefix uri 1)
     | uri when String.is_substring uri ~substring:Constants.scheduler ->
       let open Pyops in
-      let _ = scheduler.&("solve") [||] in
-      respond_string ~content_type:"text/html" ~status:`OK ~body:"Done" ()
+      let body = scheduler.&("solve") [||] in
+      let body = Py.Bool.is_true body |> Bool.to_string in
+      respond_string ~content_type:"text/html" ~status:`OK ~body ()
     | _ -> respond_string ~content_type:"text/html" ~status:`Not_found ~body:"" ()
   in
   Server.create ~mode:(`TCP (`Port port)) (Server.make ~callback ())

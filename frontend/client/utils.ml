@@ -11,6 +11,7 @@ type view =
   | Guests
   | Preferences
   | Chores
+  | GenSchedule
 
 let is_chores_view = function
   | Chores -> true
