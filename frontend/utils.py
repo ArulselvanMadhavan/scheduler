@@ -95,7 +95,7 @@ def export_schedule(CHORES_NAMES_DICT, CHORES_HOURS,
         for k, v in data.items():
             if v is not None:
                 data[k] = v + ([None] * (max_col_len - len(v)))
-                data[k] = sorted(data[k], key=lambda entry: TOTAL_CHORES_NAMES_DICT[entry[0]]
+                data[k] = sorted(data[k], key=lambda entry: CHORES_NAMES_DICT[entry[0]]
                        if entry is not None else sys.maxsize)
                 # cut day from chore name
                 data[k] = [None if cg is None else (get_chore(cg[0]), cg[1], cg[2]) for cg in data[k]]
@@ -126,7 +126,6 @@ def export_schedule(CHORES_NAMES_DICT, CHORES_HOURS,
         df1 = pd.DataFrame(data=misc_data, columns=["tasks", "owner", "hours"])
         df2 = pd.DataFrame(data=guest_hours_list, columns=["guests", "hours"])
         multiple_dfs([df0, df1, df2], ["row", "col", "col"], "chores", "chores.xlsx", 1)
-
-        print("Solution found!")
+        return True
     else:
-         print("No optimal solution found!")
+        return False
