@@ -1,7 +1,7 @@
 (executable
  (public_name magizhchi)
  (name main)
- (libraries magizhchi cohttp-lwt-unix conduit-lwt cohttp-async))
+ (libraries magizhchi cohttp-lwt-unix conduit-lwt cohttp-async pyml))
 
 (rule
  (targets embedded_files.ml embedded_files.mli)

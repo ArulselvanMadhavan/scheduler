@@ -108,4 +108,4 @@ def solve ():
     is_found = export_schedule(CHORES_NAMES_DICT, CHORES_HOURS, x, possible_combos, chore_assignment)
     return is_found
 
-solve ()
+# solve ()

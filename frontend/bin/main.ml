@@ -79,7 +79,7 @@ let respond_file ~content_type ?headers s =
 let json_pattern = Base.String.Search_pattern.create ~case_sensitive:false "json"
 let csv_pattern = Base.String.Search_pattern.create ~case_sensitive:false "csv"
 
-let server ~port =
+let server ~scheduler ~port =
   let callback _conn req body =
     let uri = req |> Request.uri |> Uri.path in
     let has_body =
@@ -123,15 +123,23 @@ let server ~port =
       Lwt.(Cohttp_lwt.(Body.to_string body) >>= handle_body)
     | uri when Base.String.Search_pattern.matches csv_pattern uri ->
       respond_file ~content_type:"application/csv" (Base.String.drop_prefix uri 1)
+    | uri when String.is_substring uri ~substring:Constants.scheduler ->
+      let open Pyops in
+      let _ = scheduler.&("solve") [||] in
+      respond_string ~content_type:"text/html" ~status:`OK ~body:"Done" ()
     | _ -> respond_string ~content_type:"text/html" ~status:`Not_found ~body:"" ()
   in
   Server.create ~mode:(`TCP (`Port port)) (Server.make ~callback ())
 ;;
 
-let main ~port =
+let main scheduler ~port =
   Stdio.printf "\nRunning at: http://localhost:%d/index.html\n" port;
   Stdio.Out_channel.flush Stdio.stdout;
-  Lwt_main.run @@ server ~port
+  Lwt_main.run @@ server ~scheduler ~port
 ;;
 
-let () = main ~port:default_port
+let () =
+  Py.initialize ();
+  let scheduler = Py.import "scheduler" in
+  main scheduler ~port:default_port
+;;

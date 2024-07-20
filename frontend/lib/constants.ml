@@ -5,6 +5,7 @@ let preferences_dir = "preferences"
 let chores_dir = "chores"
 let guests_with_preferences = "guests_with_preferences"
 let delete_guests = "delete_guests"
+let scheduler = "scheduler"
 let guests_csv = Printf.sprintf "%s/guests.csv" guests_dir
 let misc_chores_csv = Printf.sprintf "%s/misc_chores.csv" chores_dir
 let guest_pref_dir name = Printf.sprintf "%s/%s.csv" preferences_dir name
