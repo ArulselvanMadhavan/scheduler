@@ -85,6 +85,7 @@ let server ~port =
       | `No -> false
       | _ -> true
     in
+    let guests_with_prefs = "/" ^ Magizhchi.Constants.guests_with_preferences in
     match uri with
     | "" | "/" | "/index.html" ->
       respond_string ~content_type:"text/html" ~status:`OK ~body:html ()
@@ -104,6 +105,15 @@ let server ~port =
         respond_string ~content_type:"application/csv" ~status:`OK ~body ()
       in
       Lwt.(Cohttp_lwt.(Body.to_string body) >>= save_body)
+    | uri when Base.String.is_substring uri ~substring:guests_with_prefs ->
+      let body =
+        Sys.readdir Magizhchi.Constants.preferences_dir
+        |> Base.Array.filter ~f:(Base.Fn.compose (String.equal ".csv") Filename.extension)
+        |> Base.Array.map ~f:(Base.Fn.flip Filename.chop_suffix ".csv")
+        |> Array.to_list
+        |> String.concat ","
+      in
+      respond_string ~content_type:"text/html" ~status:`OK ~body ()
     | uri when Base.String.Search_pattern.matches csv_pattern uri ->
       respond_file ~content_type:"application/csv" (Base.String.drop_prefix uri 1)
     | _ -> respond_string ~content_type:"text/html" ~status:`Not_found ~body:"" ()

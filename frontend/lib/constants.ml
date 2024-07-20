@@ -2,11 +2,13 @@ open! Base
 
 let preferences_dir = "preferences"
 let chores_dir = "chores"
+let guests_with_preferences = "guests_with_preferences"
 let guests_csv = Printf.sprintf "%s/guests.csv" preferences_dir
 let misc_chores_csv = Printf.sprintf "%s/misc_chores.csv" chores_dir
 let guest_pref_dir name = Printf.sprintf "%s/%s.csv" preferences_dir name
 let preferences_header = [ "task"; "pref" ]
 let chores_header = [ "chore_name"; "hours"; "priority" ]
+let guests_header = [ "guest"; "hours" ]
 let days = [| "sun"; "mon"; "tue"; "wed"; "thu"; "fri"; "sat" |]
 let day_chore_names = [| "AM_clean"; "cook_1"; "PM_clean_1"; "PM_clean_2" |]
 let day_chore_hours = [| 0.5; 2.; 1.; 1. |]
