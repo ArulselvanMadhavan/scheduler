@@ -59,7 +59,7 @@ def solve ():
 
     ### LP setup ###
     possible_combos = [(g, tc) for g in GUESTS for tc in CHORES_NAMES
-                       if PREFERENCES_DICT[g][tc] != 0]
+                       if PREFERENCES_DICT[g].get(tc, None) and PREFERENCES_DICT[g][tc] != 0]
 
     x = pulp.LpVariable.dicts(
         "chore", possible_combos, lowBound=0, upBound=1, cat=pulp.LpInteger
@@ -103,7 +103,7 @@ def solve ():
     # per day - max hours for guests should be less than 2
     chore_assignment.solve()
     print(f"The chosen tables are out of a total of {len(possible_combos)}:")
-    # print(chore_assignment)
+    print(chore_assignment)
     # print(len(pm_clean_chores))
     # for c in possible_combos:
     #     if x[c].value() == 1.0:

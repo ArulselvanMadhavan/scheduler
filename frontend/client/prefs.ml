@@ -34,7 +34,7 @@ let pref_node prefs set_state idx display_k (k, v) =
   view
 ;;
 
-let handle_pref prefs =
+let handle_pref chores prefs =
   let split_line line =
     match String.split line ~on:',' with
     | c0 :: c1 :: _ -> Some (c0, Int.of_string c1)
@@ -42,10 +42,17 @@ let handle_pref prefs =
   in
   match Core.Or_error.ok prefs with
   | Some prefs ->
-    String.split_lines prefs
-    |> Fn.flip List.drop 1
-    |> List.filter_map ~f:split_line
-    |> Array.of_list
+    let saved_prefs =
+      String.split_lines prefs |> Fn.flip List.drop 1 |> List.filter_map ~f:split_line
+    in
+    let saved_prefs =
+      List.filter ~f:(fun (ch, _p) -> Hash_set.mem chores ch) saved_prefs
+    in
+    List.iter saved_prefs ~f:(fun (ch, _p) -> Hash_set.remove chores ch);
+    (* Add new chores unlisted in the prefs file *)
+    let saved_prefs = ref saved_prefs in
+    Hash_set.iter chores ~f:(fun ch -> saved_prefs := List.cons (ch, 0) !saved_prefs);
+    Array.of_list !saved_prefs
   | None -> [||]
 ;;
 
@@ -56,7 +63,14 @@ let fetch_tasks set_prefs guest =
   | Some guest ->
     let get_pref = Fn.compose Async_js.Http.get Constants.guest_pref_dir in
     let%bind response = F.of_deferred_fun get_pref guest in
-    set_prefs (handle_pref response)
+    let%bind chores =
+      F.of_deferred_fun Chores.load_chores Magizhchi.Constants.misc_chores_csv
+    in
+    let hs =
+      Hash_set.create ~growth_allowed:false ~size:(Array.length chores) (module String)
+    in
+    Array.map chores ~f:(fun (c, _, _) -> c) |> Array.iter ~f:(Hash_set.add hs);
+    set_prefs (handle_pref hs response)
   | None ->
     Brr.Console.(log [ str guest; str "failure_tasks" ]);
     let _ =
@@ -100,8 +114,6 @@ let update_guests graph guests set_guests set_prefs =
     else (
       let%bind _ = set_inprog true in
       let%bind guests = F.of_deferred_fun load_guests Magizhchi.Constants.guests_csv in
-      let len = Array.length guests in
-      Brr.Console.(log [ str (Base.Random.int len) ]);
       let set_pref_eff =
         if Array.is_empty guests
         then F.print_s load_guests_failed
@@ -195,12 +207,12 @@ let view cur_view set_cur_view graph =
     Array.iteri prefs ~f:(fun i (t, p) ->
       let t_parts = String.split ~on:'_' t in
       let day = List.hd_exn t_parts in
-      match Map.find Magizhchi.Constants.days_dict day with
-      | Some day_idx ->
-        (* Option.iter  ~f:(fun day_idx -> *)
+      let non_day () = misc_tasks := List.cons (i, t, p) !misc_tasks in
+      let on_day _ day_idx () =
         let xs = mat.(day_idx) in
         mat.(day_idx) <- (i, t, String.concat ~sep:"_" (List.tl_exn t_parts), p) :: xs
-      | None -> misc_tasks := List.cons (i, t, p) !misc_tasks);
+      in
+      Option.fold (Map.find Magizhchi.Constants.days_dict day) ~init:non_day ~f:on_day ());
     !misc_tasks, mat
   in
   let build_pref_nodes prefs_by_day =
