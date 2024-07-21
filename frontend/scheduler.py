@@ -12,7 +12,7 @@ def guests_df():
     guests_df = guests_df[guests_df['hours'] > 0]
     GUESTS = guests_df['guest'].to_list()
     HOURS = guests_df['hours'].to_list()
-    GUESTS_AND_HOURS = zip(GUESTS, HOURS)
+    GUESTS_AND_HOURS = list(zip(GUESTS, HOURS))
     return GUESTS, GUESTS_AND_HOURS
 
 def chores_df():
@@ -72,33 +72,39 @@ def solve ():
 
     # Every guest gets a per week max hours limit
     for guest, max_hours in GUESTS_AND_HOURS:
-        print(guest, max_hours)
         chore_assignment += (
             pulp.lpSum([get_hours(CHORES_NAMES_DICT, CHORES_HOURS, ch)[1] * x[(g, ch)]
                         for (g, ch) in possible_combos
                         if g == guest]) <= max_hours
         )
 
-    # every chore with the highest priority must have a guest assigned to it
+    # Every chore must be assigned atmost once
     for chore in CHORES_NAMES:
-        ch_idx = CHORES_NAMES_DICT[chore]
-        ch_prio = CHORES_PRIORITY[ch_idx]
-        # if ch_prio > 1:
-        #     # High priority chores should have a guest assigned to their name
-        #     chore_assignment += (
-        #         pulp.lpSum([x[(g, ch)]
-        #                     for (g, ch) in possible_combos if ch == chore]) == 1.0
-        #     )
-        # else:
         chore_assignment += (
             pulp.lpSum([x[(g, ch)]
                         for (g, ch) in possible_combos if ch == chore]) <= 1.0
         )
 
+    # pm_clean_1 and pm_clean_2 should not be same person
+    pm_clean_chores = [chore for chore in CHORES_NAMES if "pm_clean" in chore.lower()]
+
+    for g, _ in GUESTS_AND_HOURS:
+        for pc in pm_clean_chores:
+            pc_pref = "_".join(pc.split("_")[:-1])
+            pc1, pc2 = pc_pref + "_1", pc_pref + "_2"
+            key1 = (g, pc1)
+            key2 = (g, pc2)
+            lpval = [x[key] for key in [key1, key2] if x.get(key, None) is not None]
+            if len(lpval) > 1:
+                chore_assignment += (
+                    pulp.lpSum(lpval) <= 1.0
+                )
+
     # per day - max hours for guests should be less than 2
     chore_assignment.solve()
-
     print(f"The chosen tables are out of a total of {len(possible_combos)}:")
+    # print(chore_assignment)
+    # print(len(pm_clean_chores))
     # for c in possible_combos:
     #     if x[c].value() == 1.0:
     #         print(c, x[c].value())
@@ -108,4 +114,4 @@ def solve ():
     is_found = export_schedule(CHORES_NAMES_DICT, CHORES_HOURS, x, possible_combos, chore_assignment)
     return is_found
 
-# solve ()
+solve ()

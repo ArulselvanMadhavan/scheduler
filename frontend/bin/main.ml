@@ -78,6 +78,7 @@ let respond_file ~content_type ?headers s =
 
 let json_pattern = Base.String.Search_pattern.create ~case_sensitive:false "json"
 let csv_pattern = Base.String.Search_pattern.create ~case_sensitive:false "csv"
+let xlsx_pattern = Base.String.Search_pattern.create ~case_sensitive:false "xlsx"
 
 let server ~scheduler ~port =
   let callback _conn req body =
@@ -98,13 +99,15 @@ let server ~scheduler ~port =
         ~body:Embedded_files.main_dot_bc_dot_js
         ()
     | uri when Base.String.Search_pattern.matches json_pattern uri ->
-      respond_file ~content_type:"application/json" (Base.String.drop_prefix uri 1)
+      respond_file ~content_type:"application/json" (String.drop_prefix uri 1)
     | uri when Base.String.Search_pattern.matches csv_pattern uri && has_body ->
       let save_body body =
-        let _ = Csv_utils.write_csv ~fpath:(Base.String.drop_prefix uri 1) body in
+        let _ = Csv_utils.write_csv ~fpath:(String.drop_prefix uri 1) body in
         respond_string ~content_type:"application/csv" ~status:`OK ~body ()
       in
       Lwt.(Cohttp_lwt.(Body.to_string body) >>= save_body)
+    | uri when Base.String.Search_pattern.matches xlsx_pattern uri ->
+      respond_file ~content_type:"application/csv" (String.drop_prefix uri 1)
     | uri when Base.String.is_substring uri ~substring:guests_with_prefs ->
       let body =
         Stdlib.Sys.readdir Constants.preferences_dir

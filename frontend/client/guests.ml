@@ -69,6 +69,7 @@ let check_prefs guests =
     match Core.Or_error.ok response with
     | Some l ->
       String.split_lines l
+      |> Fn.flip List.drop 1
       |> List.map ~f:(String.split ~on:',')
       |> List.filter_map ~f:List.hd
       |> List.map ~f:(fun c -> c, 0)

@@ -191,13 +191,17 @@ let view cur_view set_cur_view graph =
   let group_tasks prefs =
     let days_count = Array.length Magizhchi.Constants.days in
     let mat = Array.create ~len:days_count [] in
+    let misc_tasks = ref [] in
     Array.iteri prefs ~f:(fun i (t, p) ->
       let t_parts = String.split ~on:'_' t in
       let day = List.hd_exn t_parts in
-      Option.iter (Map.find Magizhchi.Constants.days_dict day) ~f:(fun day_idx ->
+      match Map.find Magizhchi.Constants.days_dict day with
+      | Some day_idx ->
+        (* Option.iter  ~f:(fun day_idx -> *)
         let xs = mat.(day_idx) in
-        mat.(day_idx) <- (i, t, String.concat ~sep:"_" (List.tl_exn t_parts), p) :: xs));
-    mat
+        mat.(day_idx) <- (i, t, String.concat ~sep:"_" (List.tl_exn t_parts), p) :: xs
+      | None -> misc_tasks := List.cons (i, t, p) !misc_tasks);
+    !misc_tasks, mat
   in
   let build_pref_nodes prefs_by_day =
     Array.foldi prefs_by_day ~init:[] ~f:(fun i acc day_tasks ->
@@ -212,7 +216,12 @@ let view cur_view set_cur_view graph =
       let result = Node.div ~attrs:[ Attr.class_ "day-col" ] [ day; tasks ] in
       result :: acc)
   in
-  let nodes = build_pref_nodes (group_tasks prefs) |> List.rev in
+  let build_misc_nodes misc_tasks =
+    List.map misc_tasks ~f:(fun (i, k, p) -> pref_node prefs set_prefs i k (k, p))
+  in
+  let misc_tasks, day_tasks = group_tasks prefs in
+  let nodes = build_pref_nodes day_tasks |> List.rev in
   let guest_pref_nodes = Node.div ~attrs:[ Attr.class_ "day-row" ] nodes in
-  prefs_btn, Node.div [ Form.view_as_vdom dd_form; guest_pref_nodes ]
+  let misc_nodes = build_misc_nodes misc_tasks |> List.rev |> Node.div in
+  prefs_btn, Node.div [ Form.view_as_vdom dd_form; guest_pref_nodes; misc_nodes ]
 ;;
