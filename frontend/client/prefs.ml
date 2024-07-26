@@ -7,7 +7,7 @@ open Vdom
 module E = Form.Elements
 module F = Bonsai_web.Effect
 
-let pref_node ?(_show_hours=false) prefs set_state idx display_k (k, h, v) =
+let pref_node ?(_show_hours = false) prefs set_state idx display_k (k, h, v) =
   let view =
     let is_disabled id = if Int.equal id v then Some Attr.disabled else None in
     let upd_state v =
@@ -18,7 +18,7 @@ let pref_node ?(_show_hours=false) prefs set_state idx display_k (k, h, v) =
     Node.div
       ~attrs:[ Attr.class_ "task-pref-row" ]
       [ Node.label [ Node.text display_k ]
-      (* ; if show_hours then Node.label [Node.text (Float.to_string_hum h)] else Node.None *)
+        (* ; if show_hours then Node.label [Node.text (Float.to_string_hum h)] else Node.None *)
       ; Node.div
           [ Node.button
               ~attrs:[ Attr.on_click (fun _ -> upd_state 0); Attr.of_opt (is_disabled 0) ]
@@ -47,14 +47,21 @@ let handle_pref chores prefs =
       String.split_lines prefs |> Fn.flip List.drop 1 |> List.filter_map ~f:split_line
     in
     let saved_prefs =
-      List.filter_map ~f:(fun (ch, p) -> Map.find chores ch |> Option.map ~f:(fun h -> ch, h, p)) saved_prefs
+      List.filter_map
+        ~f:(fun (ch, p) -> Map.find chores ch |> Option.map ~f:(fun h -> ch, h, p))
+        saved_prefs
     in
-    let chores = List.fold ~init:chores ~f:(fun chores (ch, _h, _p) -> Map.remove chores ch) saved_prefs in
+    let chores =
+      List.fold
+        ~init:chores
+        ~f:(fun chores (ch, _h, _p) -> Map.remove chores ch)
+        saved_prefs
+    in
     (* Add new chores unlisted in the prefs file *)
     let saved_prefs = ref saved_prefs in
     Map.iter_keys chores ~f:(fun ch ->
-        let h = Map.find_exn chores ch in
-        saved_prefs := List.cons (ch, h, 0) !saved_prefs);
+      let h = Map.find_exn chores ch in
+      saved_prefs := List.cons (ch, h, 0) !saved_prefs);
     Array.of_list !saved_prefs
   | None -> [||]
 ;;
@@ -70,7 +77,9 @@ let fetch_tasks set_prefs guest =
       F.of_deferred_fun Chores.load_chores Magizhchi.Constants.misc_chores_csv
     in
     let hs =
-      Array.map chores ~f:(fun (c, h, _) -> (c, h)) |> Array.to_list |> Map.of_alist_exn (module String)
+      Array.map chores ~f:(fun (c, h, _) -> c, h)
+      |> Array.to_list
+      |> Map.of_alist_exn (module String)
     in
     set_prefs (handle_pref hs response)
   | None ->

@@ -20,7 +20,8 @@
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends ocaml dune bonsai
-          (pyml (>= 20231101)) (brr (>= 0.0.6)) (cohttp-lwt-unix (>= 5.3.0)))
+          (pyml (>= 20231101)) (brr (>= 0.0.6)) (cohttp-lwt-unix (>= 5.3.0))
+          ocamlformat)
  (tags
   (topics "to describe" your project)))
 
