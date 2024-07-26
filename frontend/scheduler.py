@@ -103,15 +103,13 @@ def solve ():
     # per day - max hours for guests should be less than 2
     chore_assignment.solve()
     print(f"The chosen tables are out of a total of {len(possible_combos)}:")
-    print(chore_assignment)
-    # print(len(pm_clean_chores))
+    # print(chore_assignment)
+
     # for c in possible_combos:
     #     if x[c].value() == 1.0:
     #         print(c, x[c].value())
 
-    # print(chore_assignment)
-
     is_found = export_schedule(CHORES_NAMES_DICT, CHORES_HOURS, x, possible_combos, chore_assignment)
     return is_found
 
-solve ()
+# solve ()

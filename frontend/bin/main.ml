@@ -53,10 +53,18 @@ let html =
         display: flex;
         justify-content: space-between;
     }
+    .main-header {
+        justify-content: center;
+    }
+    .misc-container > .task-pref-row {
+        display: flex;
+        border: solid;
+        width: 30em;
+    }
    </style>
    </head>
    <body>
-   <h1>Select your Schedule</h1>
+   <h1 class="main-header">Scheduler</h1>
    <div class="magizhchi
    -container">
    <div id="app"></div>

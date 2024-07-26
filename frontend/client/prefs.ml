@@ -234,6 +234,10 @@ let view cur_view set_cur_view graph =
   let misc_tasks, day_tasks = group_tasks prefs in
   let nodes = build_pref_nodes day_tasks |> List.rev in
   let guest_pref_nodes = Node.div ~attrs:[ Attr.class_ "day-row" ] nodes in
-  let misc_nodes = build_misc_nodes misc_tasks |> List.rev |> Node.div in
+  let misc_nodes =
+    build_misc_nodes misc_tasks
+    |> List.rev
+    |> Node.div ~attrs:[ Attr.class_ "misc-container" ]
+  in
   prefs_btn, Node.div [ Form.view_as_vdom dd_form; guest_pref_nodes; misc_nodes ]
 ;;
