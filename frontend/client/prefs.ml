@@ -7,17 +7,18 @@ open Vdom
 module E = Form.Elements
 module F = Bonsai_web.Effect
 
-let pref_node prefs set_state idx display_k (k, v) =
+let pref_node ?(show_hours=false) prefs set_state idx display_k (k, h, v) =
   let view =
     let is_disabled id = if Int.equal id v then Some Attr.disabled else None in
     let upd_state v =
       let new_arr = Array.copy prefs in
-      Array.set new_arr idx (k, v);
+      Array.set new_arr idx (k, h, v);
       set_state new_arr
     in
     Node.div
       ~attrs:[ Attr.class_ "task-pref-row" ]
       [ Node.label [ Node.text display_k ]
+      ; if show_hours then Node.text (Float.to_string_hum h) else Node.None
       ; Node.div
           [ Node.button
               ~attrs:[ Attr.on_click (fun _ -> upd_state 0); Attr.of_opt (is_disabled 0) ]
@@ -46,12 +47,14 @@ let handle_pref chores prefs =
       String.split_lines prefs |> Fn.flip List.drop 1 |> List.filter_map ~f:split_line
     in
     let saved_prefs =
-      List.filter ~f:(fun (ch, _p) -> Hash_set.mem chores ch) saved_prefs
+      List.filter_map ~f:(fun (ch, p) -> Map.find chores ch |> Option.map ~f:(fun h -> ch, h, p)) saved_prefs
     in
-    List.iter saved_prefs ~f:(fun (ch, _p) -> Hash_set.remove chores ch);
+    let chores = List.fold ~init:chores ~f:(fun chores (ch, _h, _p) -> Map.remove chores ch) saved_prefs in
     (* Add new chores unlisted in the prefs file *)
     let saved_prefs = ref saved_prefs in
-    Hash_set.iter chores ~f:(fun ch -> saved_prefs := List.cons (ch, 0) !saved_prefs);
+    Map.iter_keys chores ~f:(fun ch ->
+        let h = Map.find_exn chores ch in
+        saved_prefs := List.cons (ch, h, 0) !saved_prefs);
     Array.of_list !saved_prefs
   | None -> [||]
 ;;
@@ -67,9 +70,8 @@ let fetch_tasks set_prefs guest =
       F.of_deferred_fun Chores.load_chores Magizhchi.Constants.misc_chores_csv
     in
     let hs =
-      Hash_set.create ~growth_allowed:false ~size:(Array.length chores) (module String)
+      Array.map chores ~f:(fun (c, h, _) -> (c, h)) |> Array.to_list |> Map.of_alist_exn (module String)
     in
-    Array.map chores ~f:(fun (c, _, _) -> c) |> Array.iter ~f:(Hash_set.add hs);
     set_prefs (handle_pref hs response)
   | None ->
     Brr.Console.(log [ str guest; str "failure_tasks" ]);
@@ -164,7 +166,9 @@ let prefs_btn cur_view set_cur_view dd_form prefs =
   and set_cur_view = set_cur_view in
   let on_save _ =
     match cur_view with
-    | Utils.Preferences -> save_prefs prefs (Form.value dd_form)
+    | Utils.Preferences ->
+      let prefs = Array.map ~f:(fun (c, _h, p) -> c, p) prefs in
+      save_prefs prefs (Form.value dd_form)
     | _ -> set_cur_view Utils.Preferences
   in
   let btn_text =
@@ -204,13 +208,13 @@ let view cur_view set_cur_view graph =
     let days_count = Array.length Magizhchi.Constants.days in
     let mat = Array.create ~len:days_count [] in
     let misc_tasks = ref [] in
-    Array.iteri prefs ~f:(fun i (t, p) ->
+    Array.iteri prefs ~f:(fun i (t, h, p) ->
       let t_parts = String.split ~on:'_' t in
       let day = List.hd_exn t_parts in
-      let non_day () = misc_tasks := List.cons (i, t, p) !misc_tasks in
+      let non_day () = misc_tasks := List.cons (i, t, h, p) !misc_tasks in
       let on_day _ day_idx () =
         let xs = mat.(day_idx) in
-        mat.(day_idx) <- (i, t, String.concat ~sep:"_" (List.tl_exn t_parts), p) :: xs
+        mat.(day_idx) <- (i, t, String.concat ~sep:"_" (List.tl_exn t_parts), h, p) :: xs
       in
       Option.fold (Map.find Magizhchi.Constants.days_dict day) ~init:non_day ~f:on_day ());
     !misc_tasks, mat
@@ -219,8 +223,8 @@ let view cur_view set_cur_view graph =
     Array.foldi prefs_by_day ~init:[] ~f:(fun i acc day_tasks ->
       let day_tasks = List.rev day_tasks in
       let xs =
-        List.map day_tasks ~f:(fun (idx, k, display_k, v) ->
-          pref_node prefs set_prefs idx display_k (k, v))
+        List.map day_tasks ~f:(fun (idx, k, display_k, h, v) ->
+          pref_node prefs set_prefs idx display_k (k, h, v))
       in
       let day = Magizhchi.Constants.days.(i) in
       let day = Node.div ~attrs:[ Attr.class_ "day-header" ] [ Node.text day ] in
@@ -229,7 +233,7 @@ let view cur_view set_cur_view graph =
       result :: acc)
   in
   let build_misc_nodes misc_tasks =
-    List.map misc_tasks ~f:(fun (i, k, p) -> pref_node prefs set_prefs i k (k, p))
+    List.map misc_tasks ~f:(fun (i, k, h, p) -> pref_node ~show_hours:true prefs set_prefs i k (k, h, p))
   in
   let misc_tasks, day_tasks = group_tasks prefs in
   let nodes = build_pref_nodes day_tasks |> List.rev in

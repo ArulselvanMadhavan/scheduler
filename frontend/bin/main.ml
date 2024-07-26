@@ -54,6 +54,7 @@ let html =
         justify-content: space-between;
     }
     .main-header {
+        display: flex;
         justify-content: center;
     }
     .misc-container > .task-pref-row {
@@ -64,7 +65,7 @@ let html =
    </style>
    </head>
    <body>
-   <h1 class="main-header">Scheduler</h1>
+   <h1 class="main-header">Fort Awesome Task Scheduler</h1>
    <div class="magizhchi
    -container">
    <div id="app"></div>
