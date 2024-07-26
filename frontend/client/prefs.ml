@@ -7,7 +7,7 @@ open Vdom
 module E = Form.Elements
 module F = Bonsai_web.Effect
 
-let pref_node ?(show_hours=false) prefs set_state idx display_k (k, h, v) =
+let pref_node ?(_show_hours=false) prefs set_state idx display_k (k, h, v) =
   let view =
     let is_disabled id = if Int.equal id v then Some Attr.disabled else None in
     let upd_state v =
@@ -18,7 +18,7 @@ let pref_node ?(show_hours=false) prefs set_state idx display_k (k, h, v) =
     Node.div
       ~attrs:[ Attr.class_ "task-pref-row" ]
       [ Node.label [ Node.text display_k ]
-      ; if show_hours then Node.text (Float.to_string_hum h) else Node.None
+      (* ; if show_hours then Node.label [Node.text (Float.to_string_hum h)] else Node.None *)
       ; Node.div
           [ Node.button
               ~attrs:[ Attr.on_click (fun _ -> upd_state 0); Attr.of_opt (is_disabled 0) ]
@@ -233,7 +233,7 @@ let view cur_view set_cur_view graph =
       result :: acc)
   in
   let build_misc_nodes misc_tasks =
-    List.map misc_tasks ~f:(fun (i, k, h, p) -> pref_node ~show_hours:true prefs set_prefs i k (k, h, p))
+    List.map misc_tasks ~f:(fun (i, k, h, p) -> pref_node prefs set_prefs i k (k, h, p))
   in
   let misc_tasks, day_tasks = group_tasks prefs in
   let nodes = build_pref_nodes day_tasks |> List.rev in
