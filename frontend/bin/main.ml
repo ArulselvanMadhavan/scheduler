@@ -61,6 +61,7 @@ let html =
         display: flex;
         border: solid;
         width: 30em;
+        margin: 0 auto;
     }
    </style>
    </head>
