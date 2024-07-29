@@ -40,6 +40,10 @@ let html =
         margin: auto;
         border: solid;
     }
+    .time-row {
+      display: flex;
+      justify-content: center;
+    }
     .day-col {
       margin: 0 auto;
     }
