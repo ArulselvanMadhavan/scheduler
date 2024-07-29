@@ -249,6 +249,10 @@ let view cur_view set_cur_view set_upd_time graph =
   in
   let misc_tasks, day_tasks = group_tasks prefs in
   let nodes = build_pref_nodes day_tasks |> List.rev in
+  (* Move Sunday to the end *)
+  let prefix = List.take nodes 1 in
+  let suffix = List.drop nodes 1 in
+  let nodes = List.concat [ suffix; prefix ] in
   let guest_pref_nodes = Node.div ~attrs:[ Attr.class_ "day-row" ] nodes in
   let misc_nodes =
     build_misc_nodes misc_tasks
