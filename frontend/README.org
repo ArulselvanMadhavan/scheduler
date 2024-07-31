@@ -1,0 +1,13 @@
+* Docker
+#+begin_src bash
+  make magizhchi
+#+end_src
+#+begin_src bash
+  bash start.sh
+#+end_src
+#+begin_src bash
+  eval "$($HOME/.pyenv/bin/pyenv init -)"
+#+end_src
+#+begin_src bash
+  make run
+#+end_src
