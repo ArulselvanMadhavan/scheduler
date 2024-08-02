@@ -21,3 +21,5 @@
     sudo systemctl start magizhchi
   #+end_src
 * DHCP reservation
+* Docker
+- Attempt was made but it never materialized.
