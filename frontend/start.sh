@@ -1,8 +1,13 @@
 #!/bin/bash
-echo $HOME
-curl https://pyenv.run | /usr/bin/bash
-export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+DIR=/home/pifort/dev/scheduler/frontend
+cd $DIR
+export PYENV_ROOT=/home/pifort/.pyenv
+echo $PYENV_ROOT
+PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
-pyenv install 3.11.2
-pip install -r requirements.txt
+export OPAM_SWITCH_PREFIX=/home/pifort/.opam/default
+export PATH="$OPAM_SWITCH_PREFIX/bin:$PATH"
+make run
+# su pifort && echo $HOME && eval $(opam env --switch=default) && make run
+
+

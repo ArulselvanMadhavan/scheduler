@@ -1,13 +1,24 @@
-* Docker
+* Raspberry pi - project requirements
+- Needs 64 bit os
+- git clone https://github.com/ArulselvanMadhavan/scheduler.git
+- Install opam from ocaml site
+- opam init
+- opam install . --deps-only
+- install pyenv from pyenv github
+- add pyenv to fish shell path
+- pyenv init - | source
+- pip install -r requirements.txt
+- make run
+# Add to startup script
+- Uses systemctl
+- Follow the instructions here [[https://github.com/raspberrypi/documentation/blob/83aeab3278fc7b648022fb56b30e4d62c5ccba24/linux/usage/systemd.md][systemctl setup doc]]
+- check status of service
 #+begin_src bash
-  make magizhchi
+  sudo systemctl status magizhchi
 #+end_src
-#+begin_src bash
-  bash start.sh
-#+end_src
-#+begin_src bash
-  eval "$($HOME/.pyenv/bin/pyenv init -)"
-#+end_src
-#+begin_src bash
-  make run
-#+end_src
+- start service
+  #+begin_src bash
+    sudo systemctl start magizhchi
+  #+end_src
+* DHCP reservation
+*
