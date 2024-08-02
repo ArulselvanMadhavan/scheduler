@@ -21,4 +21,3 @@
     sudo systemctl start magizhchi
   #+end_src
 * DHCP reservation
-*
