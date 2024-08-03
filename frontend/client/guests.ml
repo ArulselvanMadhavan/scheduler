@@ -101,7 +101,7 @@ let guests_btn guests set_guests (set_cur_view, _, set_vega) graph =
   let open F.Let_syntax in
   let on_edit () =
     let%bind gs = F.of_deferred_fun load_guests Magizhchi.Constants.guests_csv in
-    F.all_unit [ set_guests gs; set_cur_view Utils.Guests ; set_vega false]
+    F.all_unit [ set_guests gs; set_cur_view Utils.Guests; set_vega false ]
   in
   let on_save () =
     F.all_unit [ save_guests guests; check_prefs guests; set_cur_view Utils.Preferences ]

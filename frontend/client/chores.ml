@@ -66,7 +66,7 @@ let chores_btn chores set_chores (set_cur_view, set_vega) graph =
   let%map chores = chores
   and set_chores = set_chores
   and set_cur_view = set_cur_view
-    and set_vega = set_vega
+  and set_vega = set_vega
   and is_edit = is_edit
   and set_edit = set_edit in
   let open F.Let_syntax in

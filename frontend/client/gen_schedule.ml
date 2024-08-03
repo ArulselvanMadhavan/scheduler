@@ -14,8 +14,7 @@ let view (set_cur_view, _, set_vega) graph =
   and is_done = is_done
   and set_done = set_done
   and set_cur_view = set_cur_view
-  and set_vega = set_vega
-  in
+  and set_vega = set_vega in
   let disabled_attr = if is_inprog then Attr.disabled else Attr.empty in
   let on_click _e =
     let open F.Let_syntax in
@@ -25,7 +24,7 @@ let view (set_cur_view, _, set_vega) graph =
     | Some resp ->
       let resp = Bool.of_string resp in
       let view_eff = if resp then set_cur_view Utils.GenSchedule else F.Ignore in
-      F.Many [ set_done resp; set_inprog false; view_eff ; set_vega false]
+      F.Many [ set_done resp; set_inprog false; view_eff; set_vega false ]
     | None -> F.Ignore
   in
   let on_click = Attr.on_click on_click in
