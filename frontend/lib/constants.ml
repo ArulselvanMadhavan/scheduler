@@ -16,6 +16,8 @@ let days = [| "sun"; "mon"; "tue"; "wed"; "thu"; "fri"; "sat" |]
 let day_chore_names = [| "AM_clean"; "cook_1"; "PM_clean_1"; "PM_clean_2" |]
 let day_chore_hours = [| 0.5; 2.; 1.; 1. |]
 let day_chore_prio = [| 2; 2; 2; 2 |]
+let top_tasks_hdr = [ "task"; "preference_score" ]
+let top_tasks_csv = "data/top_tasks.csv"
 
 let weekly_chores =
   let clen = Array.length day_chore_names in
