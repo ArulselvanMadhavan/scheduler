@@ -70,6 +70,11 @@ let html =
         width: 30em;
         margin: 0 auto;
     }
+    .download-link {
+        display: flex;
+        justify-content: center;
+        margin-top: 2em;
+    }
    </style>
    </head>
    <body>

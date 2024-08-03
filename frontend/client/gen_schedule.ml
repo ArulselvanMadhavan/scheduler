@@ -32,7 +32,10 @@ let view (set_cur_view, _, set_vega) graph =
   let btn = Node.button ~attrs [ Node.text "Generate Schedule" ] in
   let view =
     if is_done
-    then Node.a ~attrs:[ Attr.href "chores.xlsx" ] [ Node.text "Download" ]
+    then
+      Node.div
+        ~attrs:[ Attr.class_ "download-link" ]
+        [ Node.a ~attrs:[ Attr.href "chores.xlsx" ] [ Node.text "Download" ] ]
     else Node.None
   in
   btn, view
