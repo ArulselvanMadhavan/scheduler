@@ -17,6 +17,11 @@ let is_chores_view = function
   | _ -> false
 ;;
 
+let is_stats_view = function
+  | Stats -> true
+  | _ -> false
+;;
+
 let make_btn ~text ~state ~on_click =
   let is_edit, set_edit = state in
   let on_edit, on_save = on_click in

@@ -81,7 +81,6 @@ let generate_top_tasks () =
   |> List.cons (String.concat ~sep:"," Constants.top_tasks_hdr)
   |> String.concat ~sep:"\n"
   |> write_file ~file_name:Constants.top_tasks_csv
-
-let () =
-  generate_top_tasks ()
 ;;
+
+let () = generate_top_tasks ()

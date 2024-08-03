@@ -168,12 +168,13 @@ let save_prefs prefs guest =
   | _ -> F.Ignore
 ;;
 
-let prefs_btn cur_view set_cur_view set_upd_time dd_form prefs =
+let prefs_btn cur_view (set_cur_view, set_upd_time, set_vega) dd_form prefs =
   let%map prefs = prefs
   and cur_view = cur_view
   and dd_form = dd_form
   and set_cur_view = set_cur_view
-  and set_upd_time = set_upd_time in
+  and set_upd_time = set_upd_time
+  and set_vega = set_vega in
   let on_save _ =
     match cur_view with
     | Utils.Preferences ->
@@ -182,7 +183,7 @@ let prefs_btn cur_view set_cur_view set_upd_time dd_form prefs =
       F.bind
         (save_prefs prefs (Form.value dd_form))
         ~f:(fun _ -> set_upd_time (Core.Time_ns.now ()))
-    | _ -> set_cur_view Utils.Preferences
+    | _ -> F.all_unit [ set_cur_view Utils.Preferences; set_vega false ]
   in
   let btn_text =
     match cur_view with
@@ -193,7 +194,7 @@ let prefs_btn cur_view set_cur_view set_upd_time dd_form prefs =
   Node.button ~attrs:[ Attr.on_click on_save ] [ Node.text btn_text ]
 ;;
 
-let view cur_view set_cur_view set_upd_time graph =
+let view cur_view setters graph =
   let prefs, set_prefs = Bonsai.state [||] graph in
   let guests, set_guests = Bonsai.state [||] graph in
   let unit_form = Bonsai.return (Form.return ()) in
@@ -206,7 +207,7 @@ let view cur_view set_cur_view set_upd_time graph =
       (arr_to_list guests)
       graph
   in
-  let prefs_btn = prefs_btn cur_view set_cur_view set_upd_time dd_form prefs in
+  let prefs_btn = prefs_btn cur_view setters dd_form prefs in
   let%map prefs = prefs
   and set_prefs = set_prefs
   and dd_form = dd_form
