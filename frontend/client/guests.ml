@@ -90,17 +90,18 @@ let check_prefs guests =
   F.all_unit (del_gs :: ins_gs)
 ;;
 
-let guests_btn guests set_guests set_cur_view graph =
+let guests_btn guests set_guests (set_cur_view, _, set_vega) graph =
   let is_edit, set_edit = Bonsai.state true graph in
   let%map guests = guests
   and set_guests = set_guests
   and set_cur_view = set_cur_view
+  and set_vega = set_vega
   and is_edit = is_edit
   and set_edit = set_edit in
   let open F.Let_syntax in
   let on_edit () =
     let%bind gs = F.of_deferred_fun load_guests Magizhchi.Constants.guests_csv in
-    F.all_unit [ set_guests gs; set_cur_view Utils.Guests ]
+    F.all_unit [ set_guests gs; set_cur_view Utils.Guests ; set_vega false]
   in
   let on_save () =
     F.all_unit [ save_guests guests; check_prefs guests; set_cur_view Utils.Preferences ]
@@ -108,7 +109,7 @@ let guests_btn guests set_guests set_cur_view graph =
   Utils.make_btn ~text:"Guests" ~state:(is_edit, set_edit) ~on_click:(on_edit, on_save)
 ;;
 
-let view set_cur_view graph =
+let view setters graph =
   let guests, set_guests = Bonsai.state [||] graph in
   let unit_form = Bonsai.return (Form.return ()) in
   let load_guests =
@@ -126,7 +127,7 @@ let view set_cur_view graph =
   in
   let%map guests = guests
   and set_guests = set_guests
-  and btn = guests_btn guests set_guests set_cur_view graph
+  and btn = guests_btn guests set_guests setters graph
   and _ = Form.Dynamic.with_default_from_effect load_guests unit_form graph in
   let on_del i _e =
     let before = Array.slice guests 0 i in

@@ -61,27 +61,28 @@ let load_chores path =
     [||]
 ;;
 
-let chores_btn chores set_chores set_cur_view graph =
+let chores_btn chores set_chores (set_cur_view, set_vega) graph =
   let is_edit, set_edit = Bonsai.state true graph in
   let%map chores = chores
   and set_chores = set_chores
   and set_cur_view = set_cur_view
+    and set_vega = set_vega
   and is_edit = is_edit
   and set_edit = set_edit in
   let open F.Let_syntax in
   let on_edit () =
     let%bind ch = F.of_deferred_fun load_chores Magizhchi.Constants.misc_chores_csv in
-    F.all_unit [ set_chores ch; set_cur_view Utils.Chores ]
+    F.all_unit [ set_chores ch; set_cur_view Utils.Chores; set_vega false ]
   in
   let on_save () = F.all_unit [ save_chores chores; set_cur_view Utils.Preferences ] in
   Utils.make_btn ~text:"Chores" ~state:(is_edit, set_edit) ~on_click:(on_edit, on_save)
 ;;
 
-let view set_cur_view graph =
+let view (set_cur_view, _, set_vega) graph =
   let chores, set_chores = Bonsai.state [||] graph in
   let%map chores = chores
   and set_chores = set_chores
-  and btn = chores_btn chores set_chores set_cur_view graph in
+  and btn = chores_btn chores set_chores (set_cur_view, set_vega) graph in
   let chore_edit i (c, h, p) =
     let h = Float.to_string_hum ~decimals:2 h in
     let p = Int.to_string p in
