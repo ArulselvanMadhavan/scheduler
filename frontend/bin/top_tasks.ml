@@ -69,7 +69,7 @@ let process_prefs chores guests =
   !chores
 ;;
 
-let () =
+let generate_top_tasks () =
   let chores = read_chores () in
   let guests = read_guests () in
   let compare (_, p1) (_, p2) = Int.compare p2 p1 in
@@ -81,4 +81,7 @@ let () =
   |> List.cons (String.concat ~sep:"," Constants.top_tasks_hdr)
   |> String.concat ~sep:"\n"
   |> write_file ~file_name:Constants.top_tasks_csv
+
+let () =
+  generate_top_tasks ()
 ;;

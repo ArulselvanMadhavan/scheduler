@@ -1,14 +1,17 @@
 (executable
  (public_name magizhchi)
  (name main)
+ (preprocess
+  (pps ppx_let))
  (libraries magizhchi cohttp-lwt-unix conduit-lwt cohttp-async pyml))
 
-(executable
- (public_name top_tasks)
- (name top_tasks)
- (libraries magizhchi)
- (preprocess
-  (pps ppx_let)))
+;(executable
+; (public_name top_tasks)
+; (name top_tasks)
+; (modules top_tasks)
+; (libraries magizhchi)
+; (preprocess
+; (pps ppx_let)))
 
 (rule
  (targets embedded_files.ml embedded_files.mli)

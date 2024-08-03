@@ -10,6 +10,9 @@ let html =
    <html lang="en">
    <head>
    <script type="text/javascript" src="main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
    <style>
    .magizhchi-container {
    display: flex;
@@ -113,6 +116,9 @@ let server ~scheduler ~port =
         ~status:`OK
         ~body:Embedded_files.main_dot_bc_dot_js
         ()
+    | "/top_tasks" ->
+      Top_tasks.generate_top_tasks ();
+      respond_string ~content_type:"text/html" ~status:`OK ~body:"" ()
     | uri when Base.String.Search_pattern.matches json_pattern uri ->
       respond_file ~content_type:"application/json" (String.drop_prefix uri 1)
     | uri when Base.String.Search_pattern.matches csv_pattern uri && has_body ->
