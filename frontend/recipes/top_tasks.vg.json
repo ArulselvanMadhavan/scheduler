@@ -3,7 +3,7 @@
     "data": {
         "format":{"type": "csv", "parse":{"task":"string", "preference_score": "number"}}, "url": "data/top_tasks.csv"
     },
-    "mark": {"type": "bar", "tooltip":true},
+    "mark": {"type": "bar", "tooltip":{"content": "data"}},
     "encoding": {
         "x": {"field": "preference_score", "type": "quantitative", "axis": {"labelAngle": 0, "orient": "top"}},
         "y": {"field": "task", "type": "ordinal", "sort":{"field":"preference_score", "order":"descending"}}
