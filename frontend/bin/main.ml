@@ -74,6 +74,7 @@ let html =
    <div class="magizhchi
    -container">
    <div id="app"></div>
+   <div id="viz"></div>
    </div>
    </body>
    </html>

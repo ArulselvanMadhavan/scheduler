@@ -9,6 +9,7 @@ type view =
   | Guests
   | Preferences
   | Chores
+  | Stats
   | GenSchedule
 
 let is_chores_view = function
