@@ -20,6 +20,11 @@
   #+begin_src bash
     sudo systemctl start magizhchi
   #+end_src
+* Wireguard
+- Docker installed from [[https://github.com/wg-easy/wg-easy/tree/master][here]]
+- Password hash generated using same password as the raspberry pi
+- A script is available on ~/dev/scheduler/frontend  called wg.sh
+- WAN IP can be upgraded in this script and run
+- docker container will restart on boot
 * DHCP reservation
 * Docker
-- Attempt was made but it never materialized.
