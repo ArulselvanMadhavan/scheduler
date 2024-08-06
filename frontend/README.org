@@ -26,5 +26,6 @@
 - A script is available on ~/dev/scheduler/frontend  called wg.sh
 - WAN IP can be upgraded in this script and run
 - docker container will restart on boot
+- Wireguard clients can be generated here - http://<beacon_ip>:51821/
 * DHCP reservation
 * Docker
