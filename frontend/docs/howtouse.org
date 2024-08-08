@@ -53,4 +53,4 @@ If you are the chore scheduler, you are likely to use "Edit Chores", "Edit Guest
   [[./images/wghome.png]]
 - You need either a QR code or a ".conf" file.
 - In your phone/laptop, click "Import Tunnel from File" or "Import from QR code"
-  [[.images/import.png]]
+  [[./images/import.png]]
