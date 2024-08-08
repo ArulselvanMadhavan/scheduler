@@ -1,0 +1,56 @@
+* How to use the chore scheduler?
+- If you are inside the Fort, Chore scheduler can be accessed using http://192.168.5.10:8421/index.html.
+- If you are outside Fort, you need VPN to access the chore scheduler. Check the section (how to enable VPN on phone/laptop) for how to connect to the Fort network and access the chore scheduler
+* How to use the chore scheduler as a resident?
+-  When you access the [[http://192.168.5.10:8421/index.html][chore scheduler]] it will open to a page that looks like the below one
+[[./images/home.png]]
+- This is the page where you submit your chore preferences
+- Select your name as shown below
+  [[./images/select.png]]
+- Each task has three buttons.
+  - Yes - Strong preference to do this task
+  - Maybe - Open to doing this task
+  - No - Never consider me for this task
+- When you make a selection, the button will turn grey.
+- When you are done making the selections, click "Save Preferences" button on the top left
+  [[./images/save.png]]
+- After you click save, the "Last updated time" will change. This means your preferences have been captured.
+  [[./images/last_update.png]]
+- You can also reload the page and select your name to verify that your preferences have been captured.
+** Optional
+- Are you interested in selecting chores that you are more likely to get assigned?
+- Click the "View stats" button on the top
+  [[./images/stats.png]]
+- You can find the tasks ordered from most preferred by other house mates to least preferred.
+  [[./images/toptasks.png]]
+- If you select tasks that aren't preferred by others then you are likely to get assigned that task.
+* How to use the chore scheduler as a Chore-e-ographer?
+If you are the chore scheduler, you are likely to use "Edit Chores", "Edit Guests" and "Generate Schedule" pages.
+** How to add/remove guests?
+- You can add/remove/disable guests by clicking on the "Edit Guests" button
+  [[./images/guests.png]]
+- Add a guest by clicking "Add New"
+- Edit hours for the guest
+- Click "Save Guests"
+- You can disable a guest by entering hours as zero.
+- You can remove a guest permanently by clicking the "remove" button
+** How to add/remove chores?
+- You can add/remove/disable chores by clicking the "Edit Chores" button.
+  [[./images/chores.png]]
+- There are three boxes.
+  - First one is the chore name.
+  - Second one is the number of hours it will take to do the chore.
+  - Third one is the priority
+- To disable a chore, you can set the priority to zero.
+- When you are done, don't forget to click "Save Chores"
+* How to generate schedule?
+- Click "Generate schedule". This will run a script in the background. Give it a few seconds to finish.
+- When the schedule is ready, it will give you a link to download the chores for the week.
+  [[./images/gen.png]]
+* How to enable VPN on phone/laptop?
+- We run Wireguard VPN. On your phone/laptop, install the wireguard app.
+- Ask someone inside Fort network, to access the [[http://192.168.5.10:51821/][url]] and generate your VPN conf file
+  [[./images/wghome.png]]
+- You need either a QR code or a ".conf" file.
+- In your phone/laptop, click "Import Tunnel from File" or "Import from QR code"
+  [[.images/import.png]]

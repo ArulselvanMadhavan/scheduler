@@ -43,6 +43,11 @@ let html =
         margin: auto;
         border: solid;
     }
+   @media (max-width: 1000px) {
+     .day-row {
+       flex-direction: column;
+     }
+   }
     .time-row {
       display: flex;
       justify-content: center;
