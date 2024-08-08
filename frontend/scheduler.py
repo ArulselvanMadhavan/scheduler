@@ -85,6 +85,26 @@ def solve ():
                         for (g, ch) in possible_combos if ch == chore]) <= 1.0
         )
 
+    # Any guest should cook atmost once
+    cook_chores = [chore for chore in CHORES_NAMES if "cook" in chore.lower()]
+
+    for g, _ in GUESTS_AND_HOURS:
+        xs = [x[(g, ck)] for ck in cook_chores if x.get((g, ck), None) is not None]
+        chore_assignment += (pulp.lpSum(xs) <= 1.0)
+
+    # Any guest should do pm_clean atmost twice
+    pm_clean_chores = [chore for chore in CHORES_NAMES if "pm_clean" in chore.lower()]
+
+    for g, _ in GUESTS_AND_HOURS:
+        xs = [x[(g, ck)] for ck in pm_clean_chores if x.get((g, ck), None) is not None]
+        chore_assignment += (pulp.lpSum(xs) <= 2.0)
+
+    # Any guest should do pm_clean atmost four times a week
+    am_clean_chores = [chore for chore in CHORES_NAMES if "am_clean" in chore.lower()]
+    for g, _ in GUESTS_AND_HOURS:
+        xs = [x[(g, ck)] for ck in am_clean_chores if x.get((g, ck), None) is not None]
+        chore_assignment += (pulp.lpSum(xs) <= 4.0)
+
     # pm_clean_1 and pm_clean_2 should not be same person
     pm_clean_chores = [chore for chore in CHORES_NAMES if "pm_clean" in chore.lower()]
 
@@ -100,7 +120,7 @@ def solve ():
                     pulp.lpSum(lpval) <= 1.0
                 )
 
-    # per day - max hours for guests should be less than 2
+    # limit cook task to people once a week
     chore_assignment.solve()
     print(f"The chosen tables are out of a total of {len(possible_combos)}:")
     # print(chore_assignment)
