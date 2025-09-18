@@ -26,7 +26,7 @@ let read_chores () =
   read_file Constants.misc_chores_csv
   |> Fn.flip List.drop 1
   |> List.filter_map ~f:split_line
-  |> Map.of_alist_reduce (module String) ~f:(fun _ _ -> 0)
+  |> Map.of_alist_exn (module String)
 ;;
 
 let read_guests () =
@@ -53,21 +53,17 @@ let process_prefs chores guests =
     | _ -> None
   in
   let handle_guest g =
-    let guest_prefs =
-      read_file (Constants.guest_pref_dir g)
-      |> Fn.flip List.drop 1
-      |> List.filter_map ~f:split_line
-      |> Map.of_alist_multi (module String)
-      |> Map.map ~f:(List.fold ~init:0 ~f:( + ))
-    in
-    let process_pref ~key:t ~data:p =
+    let process_pref (t, p) =
       let on_found = function
         | Some old_p -> p + old_p
-        | None -> p
+        | None -> 0
       in
       chores := Map.update !chores t ~f:on_found
     in
-    Map.iteri guest_prefs ~f:process_pref
+    read_file (Constants.guest_pref_dir g)
+    |> Fn.flip List.drop 1
+    |> List.filter_map ~f:split_line
+    |> List.iter ~f:process_pref
   in
   Array.iter guests ~f:handle_guest;
   !chores
