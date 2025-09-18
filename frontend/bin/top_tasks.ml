@@ -58,16 +58,16 @@ let process_prefs chores guests =
       |> Fn.flip List.drop 1
       |> List.filter_map ~f:split_line
       |> Map.of_alist_multi (module String)
-      |> Map.map ~f:List.sum (module Int)
+      |> Map.map ~f:(List.fold ~init:0 ~f:( + ))
     in
-    let process_pref (t, p) =
+    let process_pref ~key:t ~data:p =
       let on_found = function
         | Some old_p -> p + old_p
         | None -> p
       in
       chores := Map.update !chores t ~f:on_found
     in
-    Map.iter guest_prefs ~f:process_pref
+    Map.iteri guest_prefs ~f:process_pref
   in
   Array.iter guests ~f:handle_guest;
   !chores
