@@ -26,7 +26,7 @@ let read_chores () =
   read_file Constants.misc_chores_csv
   |> Fn.flip List.drop 1
   |> List.filter_map ~f:split_line
-  |> Map.of_alist_exn (module String)
+  |> Map.of_alist_reduce (module String) ~f:(fun _ _ -> 0)
 ;;
 
 let read_guests () =
