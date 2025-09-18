@@ -53,17 +53,21 @@ let process_prefs chores guests =
     | _ -> None
   in
   let handle_guest g =
+    let guest_prefs =
+      read_file (Constants.guest_pref_dir g)
+      |> Fn.flip List.drop 1
+      |> List.filter_map ~f:split_line
+      |> Map.of_alist_multi (module String)
+      |> Map.map ~f:List.sum (module Int)
+    in
     let process_pref (t, p) =
       let on_found = function
         | Some old_p -> p + old_p
-        | None -> 0
+        | None -> p
       in
       chores := Map.update !chores t ~f:on_found
     in
-    read_file (Constants.guest_pref_dir g)
-    |> Fn.flip List.drop 1
-    |> List.filter_map ~f:split_line
-    |> List.iter ~f:process_pref
+    Map.iter guest_prefs ~f:process_pref
   in
   Array.iter guests ~f:handle_guest;
   !chores
